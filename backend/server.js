@@ -4,7 +4,8 @@ const connectDb = require("./src/config/db");
 const http = require("http");
 const cors = require("cors");
 const authrouter = require("./src/routers/userRouter");
-
+const urlrouter = require("./src/routers/urlRouter");
+const redirectRouter = require("./src/routers/redirectRouter");
 dotenv.config();
 connectDb();
 const frontend=process.env.FRONTEND_URL||"http://localhost:5173";
@@ -19,6 +20,8 @@ app.use(express.json());
 
 
 app.use("/api/goto", authrouter);
+app.use("/api/redirect", redirectRouter);
+app.use("/api/goto/urls", urlrouter);
 
 
 

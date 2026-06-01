@@ -6,4 +6,5 @@ npm install tailwindcss @tailwindcss/vite
 backend=> npm install express
 npm install mongoose
 npm install cors
+npm install nanoid
 npm install dotenv

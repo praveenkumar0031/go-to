@@ -1,0 +1,26 @@
+Method: POST
+
+URL: http://localhost:8000/api/goto/login (or /signup if you haven't created a user yet)
+
+Headers: Content-Type: application/json
+
+Body (raw JSON):
+{
+  "email": "test@example.com",
+  "password": "securepassword123"
+}
+-------------------------------
+Method: POST
+
+URL: http://localhost:8000/api/urls
+
+Headers: * Content-Type: application/json
+
+Authorization: Bearer <PASTE_YOUR_COPIED_TOKEN_HERE>
+
+Body (raw JSON):
+
+JSON
+{
+  "originalUrl": "https://katomaran.com"
+}   
