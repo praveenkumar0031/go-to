@@ -7,12 +7,12 @@ const authrouter = require("./src/routers/userRouter");
 
 dotenv.config();
 connectDb();
-//const frontend=process.env.FRONTEND_URL;
+const frontend=process.env.FRONTEND_URL||"http://localhost:5173";
 const app = express();
-// app.use(cors({
-//   origin: frontend,
-//   credentials: true
-// }));
+app.use(cors({
+  origin: frontend,
+  credentials: true
+}));
 const server = http.createServer(app);
 app.use(express.json());
 
