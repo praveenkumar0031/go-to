@@ -1,2 +1,8 @@
 frontend=> npm install
+npm install @react-oauth/google
+npm install react-router-dom
+npm install react-icons
 backend=> npm install express
+npm install mongoose
+npm install cors
+npm install dotenv
