@@ -1,0 +1,139 @@
+Method: POST
+
+URL: http://localhost:8000/api/goto/login (or /signup if you haven't created a user yet)
+
+Headers: Content-Type: application/json
+
+Body (raw JSON):
+{
+  "email": "test@example.com",
+  "password": "securepassword123"
+}
+-------------------------------
+Method: POST
+
+URL: http://localhost:8000/api/urls
+
+Headers: * Content-Type: application/json
+
+Authorization: Bearer 
+
+Body (raw JSON):
+
+JSON
+{
+  "originalUrl": "https://katomaran.com"
+}   
+custom:body
+  {
+     "originalUrl":"https://katomaran.com", 
+     "customAlias" :"kato"
+}
+----------------------------------
+(Redirect)
+Method: GET
+URL: http://localhost:8000/api/goto/urls/shortcode
+Authorization: Bearer 
+
+
+ redirect...
+---------------------------------
+ Method: GET
+ URL: http://localhost:8000/api/goto/urls/shortCode/analytics
+ Authorization: Bearer 
+ get logs
+ o/p:{
+    "originalUrl": "https://katomaran.com",
+    "shortCode": "uGKuVdCg",
+    "createdAt": "2026-06-01T18:04:23.697Z",
+    "totalClicks": 2,
+    "lastVisitedAt": null,
+    "recentVisits": [
+        {
+            "_id": "6a1e54fa67b6462851980b67",
+            "urlId": "6a1dc9a77d4a5d439f236363",
+            "ipAddress": "::1",
+            "userAgent": "PostmanRuntime/7.29.0",
+            "createdAt": "2026-06-02T03:58:50.200Z",
+            "updatedAt": "2026-06-02T03:58:50.200Z",
+            "__v": 0
+        },
+        {
+            "_id": "6a1e54b356ef1fdc677e00f1",
+            "urlId": "6a1dc9a77d4a5d439f236363",
+            "ipAddress": "::1",
+            "userAgent": "PostmanRuntime/7.29.0",
+            "createdAt": "2026-06-02T03:57:39.321Z",
+            "updatedAt": "2026-06-02T03:57:39.321Z",
+            "__v": 0
+        }
+    ]
+}
+------------------------
+Method: PUT
+http://localhost:8000/api/goto/urls/shortCode
+Authorization: Bearer 
+body:{
+     "originalUrl":"https://katomaran.com", 
+     "customAlias" :"kato"
+}
+o/p:{
+    "_id": "6a1dc9a77d4a5d439f236363",
+    "originalUrl": "https://katomaran.com",
+    "shortCode": "kato",
+    "userId": "6a1dae4eb223120c9edd4980",
+    "createdAt": "2026-06-01T18:04:23.697Z",
+    "__v": 0
+}
+--------------------------
+Method: DELETE
+URL:http://localhost:8000/api/goto/urls/shortcode
+--------------------------
+Method: GET
+URL:http://localhost:8000/api/goto/urls/logs/all
+o/p:{
+    "success": true,
+    "count": 4,
+    "logs": [
+        {
+            "shortCode": "kato1",
+            "ipAddress": "::1",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+            "visitedAt": "2026-06-02T05:40:38.384Z"
+        },
+        {
+            "shortCode": "kato1",
+            "ipAddress": "::1",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+            "visitedAt": "2026-06-02T05:40:17.755Z"
+        },
+        {
+            "shortCode": "kato1",
+            "ipAddress": "::1",
+            "userAgent": "PostmanRuntime/7.29.0",
+            "visitedAt": "2026-06-02T05:06:50.071Z"
+        },
+        {
+            "shortCode": "kato1",
+            "ipAddress": "::1",
+            "userAgent": "PostmanRuntime/7.29.0",
+            "visitedAt": "2026-06-02T05:02:52.588Z"
+        }
+    ]
+}
+
+----------------------------------------
+Method: GET
+URL:http://localhost:8000/api/goto/urls/
+{
+    "success": true,
+    "count": 1,
+    "urls": [
+        {
+            "_id": "6a1e63e0536e817b1bf5f361",
+            "originalUrl": "https://katomaran.com",
+            "shortCode": "kato1",
+            "createdAt": "2026-06-02T05:02:24.791Z"
+        }
+    ]
+}

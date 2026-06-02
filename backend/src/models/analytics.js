@@ -1,21 +1,23 @@
-const mongoose=require("mongoose");
+const mongoose = require('mongoose');
 
 const analyticsSchema = new mongoose.Schema({
+
   urlId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Url',
     required: true,
+    unique: true
   },
-  timestamp: {
-    type: Date,
-    default: Date.now,
+
+  totalClicks: {
+    type: Number,
+    default: 0
   },
-  userAgent: {
-    type: String, // Captures browser and OS for the UI dashboard
-  },
-  ipAddress: {
-    type: String,
+
+  lastVisitedAt: {
+    type: Date
   }
-});
+
+}, { timestamps: true });
 
 module.exports = mongoose.model('Analytics', analyticsSchema);
