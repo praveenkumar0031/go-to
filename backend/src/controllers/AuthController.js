@@ -117,7 +117,7 @@ const loginUser = async (req, res) => {
 
 const getUserById = async (req, res) => {
   try {
-      const userId = req.userId;
+      const userId = req.user.id;
       const existingUser = await user.findOne({ _id: userId });
       if (!existingUser) return res.status(400).json({ message: "User doesn't exist" });
       res.status(200).json(existingUser);

@@ -128,23 +128,16 @@ const getUserUrls = async (req, res) => {
     const userId = req.user.id;
 
     const urls = await Url.find(
-
       { userId },
-
       {
-        shortCode: 1,
-        originalUrl: 1,
-        createdAt: 1
+        createdAt: -1
       }
-
-    ).sort({ createdAt: -1 });
+    )
+    .sort({ createdAt: -1 });
 
     res.status(200).json({
-
       success: true,
-
       count: urls.length,
-
       urls
     });
 
@@ -156,9 +149,7 @@ const getUserUrls = async (req, res) => {
     );
 
     res.status(500).json({
-
       success: false,
-
       error:
         'Server error while fetching URLs.'
     });

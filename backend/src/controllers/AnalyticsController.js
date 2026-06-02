@@ -1,86 +1,79 @@
 const Url = require('../models/url.js');
 const Analytics = require('../models/analytics.js');
-
+const UAParser = require('ua-parser-js');
+const geoip = require('geoip-lite');
 const Log = require('../models/log.js');
+const mongoose=require("mongoose");
 
-const handleRedirect = async (req, res) => {
-
+  const handleRedirect = async (req, res) => {
   try {
-
     const { shortCode } = req.params;
 
+    // Fast lookup
     const urlData = await Url.findOne({ shortCode });
 
     if (!urlData) {
-      return res.status(404).json({
-        error: 'URL not found'
-      });
+      return res.status(404).json({ error: 'URL not found' });
     }
 
-    // Redirect immediately
+    // 1. Redirect immediately (Zero latency for the user)
     res.redirect(urlData.originalUrl);
 
-    // Background analytics logging
+    // 2. Background analytics logging (Fire-and-forget)
     const logAnalytics = async () => {
-
       try {
+        // --- Data Extraction & Parsing ---
+        const rawUserAgent = req.headers['user-agent'] || '';
+        let ip = req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress;
+        
+        // Handle local IPv6 loopback and proxy arrays
+        if (ip === '::1') ip = '127.0.0.1';
+        if (ip && ip.includes(',')) ip = ip.split(',')[0].trim();
 
-        // 1. Update Aggregated Analytics
-        await Analytics.findOneAndUpdate(
+        // Parse UA and IP
+        const parser = new UAParser(rawUserAgent);
+        const parsedUA = parser.getResult();
+        const geo = geoip.lookup(ip);
 
-  { urlId: urlData._id },
+        // --- Database Writes (Run in parallel for speed) ---
+        
+        // A. Update Aggregated Analytics (Total Clicks & Last Visited)
+        const updateAnalyticsPromise = Analytics.findOneAndUpdate(
+          { urlId: urlData._id },
+          {
+            $inc: { totalClicks: 1 },
+            $set: { lastVisitedAt: new Date() }
+          },
+          { upsert: true, returnDocument: 'after' }
+        );
 
-  {
-    $inc: {
-      totalClicks: 1
-    },
-
-    $set: {
-      lastVisitedAt: new Date()
-    }
-  },
-
-  {
-    upsert: true,
-    returnDocument: 'after'
-  }
-);
-
-        // 2. Store Visit History
-        await Log.create({
-
+        // B. Store Detailed Visit History (Enriched Data)
+        const createLogPromise = Log.create({
           urlId: urlData._id,
-
-          ipAddress:  
-            req.ip || req.connection.remoteAddress,
-
-          userAgent:
-            req.headers['user-agent']
+          ipAddress: ip,
+          userAgent: rawUserAgent,
+          browser: parsedUA.browser.name || 'Unknown',
+          os: parsedUA.os.name || 'Unknown',
+          deviceType: parsedUA.device.type ,
+          country: geo ? geo.country : 'India',
           
         });
 
-      } catch (err) {
+        // Execute both database operations concurrently
+        await Promise.all([updateAnalyticsPromise, createLogPromise]);
 
-        console.error(
-          'Analytics logging failed:',
-          err
-        );
+      } catch (err) {
+        console.error('Analytics logging failed:', err);
       }
     };
 
     logAnalytics();
 
   } catch (error) {
-
     console.error('Redirect error:', error);
-
-    res.status(500).json({
-      error: 'Server error during redirect.'
-    });
+    res.status(500).json({ error: 'Server error during redirect.' });
   }
 };
-
-
 
 const getUrlAnalytics = async (req, res) => {
 
@@ -207,9 +200,96 @@ const getUserLogs = async (req, res) => {
     });
   }
 };
+const getTodayLogs = async (req, res) => {
+  try {
+    
+    const userId = req.user.id;
 
+    // START OF TODAY
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    // END OF TODAY
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+
+    // GET USER URL IDS
+    const userUrls = await Url.find({
+      userId: new mongoose.Types.ObjectId(userId),
+    }).select("_id shortCode");
+
+
+    const urlIds = userUrls.map((url) => url._id);
+
+
+    // GET TODAY LOGS
+    const logs = await Log.find({
+      urlId: { $in: urlIds },
+
+      createdAt: {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      },
+    }).sort({ createdAt: -1 });
+
+
+    // HOURLY TRAFFIC
+    const hourlyMap = {};
+
+    // initialize 24 hours
+    for (let i = 0; i < 24; i++) {
+      const key = `${i.toString().padStart(2, "0")}:00`;
+      hourlyMap[key] = 0;
+    }
+
+
+    logs.forEach((log) => {
+      const hour = new Date(log.createdAt)
+        .getHours()
+        .toString()
+        .padStart(2, "0");
+
+      const key = `${hour}:00`;
+
+      hourlyMap[key]++;
+    });
+
+
+    const hourlyTraffic = Object.entries(hourlyMap).map(
+      ([hour, clicks]) => ({
+        hour,
+        clicks,
+      })
+    );
+
+
+    // RECENT LOGS
+    const recentLogs = logs.slice(0, 10);
+
+
+    return res.status(200).json({
+      success: true,
+
+      todayClicks: logs.length,
+
+      hourlyTraffic,
+
+      recentLogs,
+    });
+
+  } catch (error) {
+    console.error("TODAY LOG ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch today logs",
+    });
+  }
+};
 module.exports = {
   handleRedirect,
   getUrlAnalytics,
-  getUserLogs
+  getUserLogs,
+  getTodayLogs
 };

@@ -6,7 +6,7 @@ const { auth } = require("../middleware/authenticate");
 const {requestPasswordReset,resetPassword} =require('../controllers/UserController');
 router.post("/signup",rateLimiter,signupUser);
 router.post("/login",strictLimiter,loginUser);
-router.get("/user",rateLimiter,getUserById);
+router.get("/user",rateLimiter,auth,getUserById);
 router.post("/auth/google", oAuth);
 router.post("/user/forget",requestPasswordReset);
 router.post("/user/reset",strictLimiter,resetPassword);
