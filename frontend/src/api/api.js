@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { useGoogleLogin } from '@react-oauth/google';
-const api = import.meta.env.VITE_BACKEND_API || "http://localhost:8000/api/goto";
+const api = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/goto";
 const redirectapi=import.meta.env.VITE_REDIRECT_API||"http://localhost:8000/goto";
 
 const getAuthHeader = () => ({
@@ -84,7 +84,7 @@ export const getAllUrls = async () => {
 // GET ANALYTICS
 export const getUrlAnalytics = async (shortCode) => {
     const response = await axios.get(
-        `${redirectapi}/urls/${shortCode}/analytics`,
+        `${redirectapi}/${shortCode}/analytics`,
         getAuthHeader()
     );
 

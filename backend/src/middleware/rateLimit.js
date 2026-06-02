@@ -12,7 +12,7 @@ const rateLimiter = Limit({
 
 const strictLimiter = Limit({
   windowMs: 30 * 60 * 1000, // 1/2 hour
-  max: 15, // Limit each IP to 15 requests per hour for sensitive routes
+  max: 100, // Limit each IP to 15 requests per hour for sensitive routes
   message: { error: 'Too many attempts from this IP, please try again after an hour.' }
 });
 const userLimiter = Limit({

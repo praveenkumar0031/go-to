@@ -1,37 +1,24 @@
-import React, { useState, useEffect } from "react";
-import { MdOutlineVisibility, MdOutlineVisibilityOff, MdAlternateEmail, MdLockOutline } from "react-icons/md";
-import { useNavigate, Link } from "react-router-dom";
-import { loginapi, verifyGoogleCode } from "../../api/api";
-import { FcGoogle } from "react-icons/fc"; 
+import React, { useState, useEffect } from 'react';
+import { MdOutlineVisibility, MdOutlineVisibilityOff, MdAlternateEmail, MdLockOutline } from 'react-icons/md';
+import { useNavigate, Link } from 'react-router-dom';
+import { loginapi, verifyGoogleCode, getUserApi } from '../../api/api';
+import { FcGoogle } from 'react-icons/fc';
 import { useGoogleLogin } from '@react-oauth/google';
-
-import Logo from "../../assets/goto.png";
+import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import AuthLayout from '../layouts/AuthLayout';
 
 const Login = () => {
   const navigate = useNavigate();
-  const [login, setLogin] = useState({ email: "", password: "" });
+  const { isDark } = useTheme();
+  const { login } = useAuth();
+  const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [type, setType] = useState("");
 
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    if (code && !window.hasProcessed) {
-      window.hasProcessed = true;
-      handleFinalLogin(code);
-      window.history.replaceState({}, document.title, "/login");
-    }
-  }, []);
-
-  const googlelogin = useGoogleLogin({
-    flow: 'auth-code',
-    ux_mode: 'redirect',
-    redirect_uri: `${import.meta.env.VITE_FRONTEND_URL}/login`, 
-  });
-
-  const handleFinalLogin = async (code) => {
+  const handleGoogleLogin = async (code) => {
     setLoading(true);
     try {
       const data = await verifyGoogleCode(code);
@@ -41,167 +28,222 @@ const Login = () => {
           localStorage.setItem('user', JSON.stringify(data.user));
           localStorage.setItem('email', data.user.email);
         }
-        navigate("/dashboard", { replace: true });
+        
+        try {
+          const userData = await getUserApi();
+          login(data.token, userData);
+          toast.success('Login successful!');
+          navigate('/dashboard', { replace: true });
+        } catch (err) {
+          toast.error('Failed to load user data');
+          localStorage.removeItem('token');
+          window.hasProcessed = false;
+        }
       }
     } catch (err) {
-      setMessage("Google Auth failed.");
-      setType("error");
-      window.hasProcessed = false; 
+      toast.error('Google authentication failed');
+      window.hasProcessed = false;
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code && !window.hasProcessed) {
+      window.hasProcessed = true;
+      handleGoogleLogin(code);
+      window.history.replaceState({}, document.title, '/login');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const googleLogin = useGoogleLogin({
+    flow: 'auth-code',
+    ux_mode: 'redirect',
+    redirect_uri: `${import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173'}/login`,
+  });
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setLogin((prev) => ({ ...prev, [name]: value }));
+    setCredentials((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage("");
+
     try {
-      const res = await loginapi(login);
+      const res = await loginapi(credentials);
       if (res.token) {
         localStorage.setItem('token', res.token);
-        localStorage.setItem('email', login.email);
-        navigate("/dashboard");
+        localStorage.setItem('email', credentials.email);
+        
+        try {
+          const userData = await getUserApi();
+          login(res.token, userData);
+          toast.success('Login successful!');
+          navigate('/dashboard');
+        } catch (err) {
+          toast.error('Failed to load user data');
+          localStorage.removeItem('token');
+        }
       } else {
-        setMessage(res.message || "Invalid credentials");
-        setType("error");
+        toast.error(res.message || 'Invalid credentials');
       }
     } catch (err) {
-      setMessage("Invalid email or password.");
-      setType("error");
+      toast.error(err.response?.data?.message || 'Login failed');
     } finally {
       setLoading(false);
     }
   };
 
+  const inputClasses = (isDark) => ({
+    container: `flex items-center border rounded-lg transition-all duration-200 ${
+      isDark
+        ? 'bg-slate-800 border-slate-700 focus-within:border-indigo-500'
+        : 'bg-white border-slate-300 focus-within:border-indigo-500'
+    }`,
+    icon: `ml-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`,
+    input: `flex-1 px-4 py-3 bg-transparent border-0 outline-none text-sm ${
+      isDark
+        ? 'text-white placeholder-slate-500'
+        : 'text-slate-900 placeholder-slate-400'
+    }`,
+  });
+
   return (
-    <div className="min-h-screen w-full bg-[#f8fafc] flex flex-col items-center justify-center p-4 selection:bg-indigo-100 overflow-x-hidden font-sans relative">
-      
-      {/* Background Decor */}
-      <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-100/40 blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-80 h-80 bg-pink-50/50 blur-[120px] pointer-events-none"></div>
-
-      {/* BRAND LOGO SECTION */}
-      <div className="mb-8 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-1000">
-        <div className="relative group">
-          {/* Subtle Glow behind logo */}
-          <div className="absolute inset-0 bg-indigo-400/20 blur-2xl rounded-full scale-150 group-hover:bg-indigo-400/40 transition-all duration-500"></div>
-          <img 
-            src={Logo} 
-            alt="Hash-Tag Logo" 
-            className="w-20 h-20 md:w-24 md:h-24 object-contain relative z-10 drop-shadow-2xl hover:scale-105 transition-transform duration-300 ease-out animate-bounce-slow"
-          />
-        </div>
-      </div>
-
-      <div className="w-full max-w-[400px] bg-white rounded-[2.5rem] p-7 md:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 relative z-10 transition-all duration-500">
-        
-        <div className="flex flex-col items-center mb-6 md:mb-8">
-          <h2 className="text-slate-800 text-2xl md:text-3xl font-black tracking-tight">Welcome Back</h2>
-          <p className="text-slate-400 text-xs md:text-sm font-semibold mt-1"> Login to your account</p>
-        </div>
-
-        {message && (
-          <div className={`mb-5 p-3.5 rounded-2xl text-[11px] font-bold text-center animate-in fade-in zoom-in duration-300 ${
-            type === "success" ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-red-50 text-red-600 border border-red-100"
+    <AuthLayout title="Sign In" subtitle="Enter your credentials to access your account">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="email" className={`block text-sm font-semibold mb-2 ${
+            isDark ? 'text-slate-300' : 'text-slate-700'
           }`}>
-            {message}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="relative group">
-            <MdAlternateEmail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
+            Email Address
+          </label>
+          <div className={inputClasses(isDark).container}>
+            <MdAlternateEmail className={`${inputClasses(isDark).icon} text-lg`} />
             <input
+              id="email"
               type="email"
               name="email"
               required
-              value={login.email}
+              value={credentials.email}
               onChange={handleChange}
-              placeholder="Email address"
-              className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-slate-700 placeholder:text-slate-400 outline-none focus:bg-white focus:border-indigo-600/30 focus:ring-4 focus:ring-indigo-600/5 transition-all text-sm font-medium"
+              placeholder="you@example.com"
+              className={inputClasses(isDark).input}
+              disabled={loading}
             />
           </div>
+        </div>
 
-          <div className="relative group">
-            <MdLockOutline className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
+        <div>
+          <label htmlFor="password" className={`block text-sm font-semibold mb-2 ${
+            isDark ? 'text-slate-300' : 'text-slate-700'
+          }`}>
+            Password
+          </label>
+          <div className={inputClasses(isDark).container}>
+            <MdLockOutline className={`${inputClasses(isDark).icon} text-lg`} />
             <input
-              type={showPassword ? "text" : "password"}
+              id="password"
+              type={showPassword ? 'text' : 'password'}
               name="password"
               required
-              value={login.password}
+              value={credentials.password}
               onChange={handleChange}
-              placeholder="Password"
-              className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-12 text-slate-700 placeholder:text-slate-400 outline-none focus:bg-white focus:border-indigo-600/30 focus:ring-4 focus:ring-indigo-600/5 transition-all text-sm font-medium"
+              placeholder="••••••••"
+              className={inputClasses(isDark).input}
+              disabled={loading}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              className={`mr-3 transition-colors duration-200 ${
+                isDark
+                  ? 'text-slate-500 hover:text-slate-400'
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
             >
-              {showPassword ? <MdOutlineVisibilityOff size={20} /> : <MdOutlineVisibility size={20} />}
+              {showPassword ? (
+                <MdOutlineVisibilityOff size={20} />
+              ) : (
+                <MdOutlineVisibility size={20} />
+              )}
             </button>
           </div>
-
-          <div className="flex justify-end px-1">
-            <Link 
-              to="/forget" 
-              className="text-[11px] font-black uppercase tracking-wider text-slate-400 hover:text-indigo-600 transition-colors"
-            >
-              Forgot Password?
-            </Link>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-2xl transition-all active:scale-[0.98] shadow-lg shadow-slate-200 disabled:opacity-50 text-sm mt-2"
-          >
-            {loading ? "Authenticating..." : "LogIn"}
-          </button>
-        </form>
-
-        <div className="flex items-center my-7">
-          <div className="flex-1 h-px bg-slate-100"></div>
-          <span className="px-3 text-[10px] text-slate-300 font-black uppercase tracking-widest">or</span>
-          <div className="flex-1 h-px bg-slate-100"></div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => googlelogin()}
-          disabled={loading}
-          className="w-full bg-white border border-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98] text-sm shadow-sm"
-        >
-          <FcGoogle size={22} />
-          <span>Continue with Google</span>
-        </button>
-
-        <p className="text-center text-slate-500 text-xs mt-8">
-          Don't have an account?{" "}
-          <Link to="/signup" className="text-indigo-600 hover:text-green-900 font-bold  decoration-indigo-600/20 transition-all">
-            Create one
+        <div className="flex justify-end">
+          <Link
+            to="/forget"
+            className={`text-sm font-medium transition-colors duration-200 ${
+              isDark
+                ? 'text-indigo-400 hover:text-indigo-300'
+                : 'text-indigo-600 hover:text-indigo-700'
+            }`}
+          >
+            Forgot password?
           </Link>
-        </p>
+        </div>
+
+        <motion.button
+          type="submit"
+          disabled={loading}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white font-semibold transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {loading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span>Signing in...</span>
+            </>
+          ) : (
+            'Sign In'
+          )}
+        </motion.button>
+      </form>
+
+      <div className="my-6 flex items-center gap-3">
+        <div className={`flex-1 h-px ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+        <span className={`text-xs font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+          OR
+        </span>
+        <div className={`flex-1 h-px ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
       </div>
 
-      <style>{`
-        body { background-color: #f8fafc; }
-        ::-webkit-scrollbar { width: 0px; }
-        @keyframes bounce-slow {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
-        }
-        .animate-bounce-slow {
-          animation: bounce-slow 4s ease-in-out infinite;
-        }
-      `}</style>
-    </div>
+      <motion.button
+        type="button"
+        onClick={() => googleLogin()}
+        disabled={loading}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className={`w-full py-3 px-4 rounded-lg border transition-all duration-200 flex items-center justify-center gap-3 font-semibold ${
+          isDark
+            ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 text-white'
+            : 'bg-white border-slate-300 hover:bg-slate-50 text-slate-900'
+        } disabled:opacity-70 disabled:cursor-not-allowed`}
+      >
+        <FcGoogle size={20} />
+        <span>Continue with Google</span>
+      </motion.button>
+
+      <p className={`text-center text-sm mt-6 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+        Don't have an account?{' '}
+        <Link
+          to="/signup"
+          className={`font-semibold transition-colors duration-200 ${
+            isDark
+              ? 'text-indigo-400 hover:text-indigo-300'
+              : 'text-indigo-600 hover:text-indigo-700'
+          }`}
+        >
+          Create one
+        </Link>
+      </p>
+    </AuthLayout>
   );
 };
 

@@ -7,32 +7,48 @@ import {
   MdKey,
   MdArrowBack,
   MdInfoOutline,
-  
 } from 'react-icons/md';
-import { BsQuestionLg } from "react-icons/bs";
+import { BsQuestionLg } from 'react-icons/bs';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 const ForgotPassword = () => {
-  const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [step, setStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
-
   const navigate = useNavigate();
   const backendUrl = import.meta.env.VITE_BACKEND_API;
 
+  const [step, setStep] = useState(1);
+
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+
+  const [loading, setLoading] = useState(false);
+
+  const [message, setMessage] = useState({
+    type: '',
+    text: '',
+  });
+
+  // REQUEST OTP
   const handleRequestOtp = async (e) => {
     e.preventDefault();
 
     setLoading(true);
-    setMessage({ type: '', text: '' });
+
+    setMessage({
+      type: '',
+      text: '',
+    });
 
     try {
       const response = await axios.post(
         `${backendUrl}/user/forget`,
-        { email }
+        {
+          email,
+        }
       );
+
+      toast.success(response.data.message || 'OTP sent successfully');
 
       setMessage({
         type: 'success',
@@ -41,38 +57,65 @@ const ForgotPassword = () => {
 
       setStep(2);
     } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || 'Failed to send OTP';
+
+      toast.error(errorMessage);
+
       setMessage({
         type: 'error',
-        text: err.response?.data?.message || 'Failed to send OTP',
+        text: errorMessage,
       });
     } finally {
       setLoading(false);
     }
   };
 
+  // RESET PASSWORD
   const handleResetPassword = async (e) => {
     e.preventDefault();
 
     setLoading(true);
-    setMessage({ type: '', text: '' });
+
+    setMessage({
+      type: '',
+      text: '',
+    });
 
     try {
-      await axios.post(`${backendUrl}/user/reset`, {
-        email,
-        otp,
-        newPassword,
-      });
+      const response = await axios.post(
+        `${backendUrl}/user/reset`,
+        {
+          email,
+          otp,
+          newPassword,
+        }
+      );
+
+      toast.success(
+        response.data.message || 'Password reset successful'
+      );
 
       setMessage({
         type: 'success',
-        text: 'Password reset successful! Redirecting...',
+        text:
+          response.data.message ||
+          'Password reset successful! Redirecting...',
       });
 
-      setTimeout(() => navigate('/login'), 2000);
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     } catch (err) {
+      const errorMessage =
+        err.response?.data?.message ||
+        'Invalid OTP or password reset failed';
+
+      toast.error(errorMessage);
+
       setMessage({
         type: 'error',
-        text: err.response?.data?.message || 'Invalid OTP or error',
+        text: errorMessage,
       });
     } finally {
       setLoading(false);
@@ -84,21 +127,34 @@ const ForgotPassword = () => {
 
       {/* Background Glow */}
       <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-100/40 blur-[120px] pointer-events-none"></div>
+
       <div className="absolute bottom-0 left-0 w-80 h-80 bg-pink-50/50 blur-[120px] pointer-events-none"></div>
 
       {/* Gradient */}
       <svg width="0" height="0">
         <defs>
-          <linearGradient id="hash-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient
+            id="hash-gradient"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
             <stop offset="0%" stopColor="#4f46e5" />
             <stop offset="100%" stopColor="#ec4899" />
           </linearGradient>
         </defs>
       </svg>
 
-      <div className="w-full max-w-[420px] bg-white rounded-[2.5rem] p-7 md:p-10 border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative z-10">
+      {/* Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-[420px] bg-white rounded-[2.5rem] p-7 md:p-10 border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative z-10"
+      >
 
-        {/* Back Button */}
+        {/* Back */}
         <Link
           to="/login"
           className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors mb-6"
@@ -111,14 +167,16 @@ const ForgotPassword = () => {
         <div className="flex flex-col items-center mb-7">
 
           <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm mb-4 flex items-center justify-center">
-  <BsQuestionLg
-    className="text-black-600"
-    size={24}
-  />
-</div>
+            <BsQuestionLg
+              className="text-indigo-600"
+              size={24}
+            />
+          </div>
 
           <h2 className="text-2xl md:text-3xl font-black tracking-tight text-slate-800 text-center">
-            {step === 1 ? 'Forgot Password' : 'Reset Password'}
+            {step === 1
+              ? 'Forgot Password'
+              : 'Reset Password'}
           </h2>
 
           <p className="text-slate-400 text-xs font-semibold mt-1 text-center">
@@ -143,9 +201,12 @@ const ForgotPassword = () => {
 
         {/* STEP 1 */}
         {step === 1 ? (
-          <form onSubmit={handleRequestOtp} className="space-y-4">
+          <form
+            onSubmit={handleRequestOtp}
+            className="space-y-4"
+          >
 
-            {/* Email Input */}
+            {/* Email */}
             <div className="relative group">
               <MdEmail
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors"
@@ -158,7 +219,10 @@ const ForgotPassword = () => {
                 placeholder="Email address"
                 className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-slate-700 placeholder:text-slate-400 outline-none focus:bg-white focus:border-indigo-600/30 focus:ring-4 focus:ring-indigo-600/5 transition-all text-sm font-medium"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) =>
+                  setEmail(e.target.value)
+                }
+                disabled={loading}
               />
             </div>
 
@@ -166,7 +230,11 @@ const ForgotPassword = () => {
             <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
 
               <div className="flex items-center gap-2 mb-3">
-                <MdInfoOutline className="text-green-600" size={18} />
+                <MdInfoOutline
+                  className="text-green-600"
+                  size={18}
+                />
+
                 <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
                   Instructions
                 </h4>
@@ -175,40 +243,63 @@ const ForgotPassword = () => {
               <ul className="space-y-2 text-[11px] text-slate-500 font-medium leading-relaxed">
 
                 <li className="flex gap-2">
-                  <span className="text-grey-600 font-black">1.</span>
-                  Enter the email linked with your account.
+                  <span className="text-indigo-600 font-black">
+                    1.
+                  </span>
+
+                  Enter the email linked with your
+                  account.
                 </li>
 
                 <li className="flex gap-2">
-                  <span className="text-grey-600 font-black">2.</span>
-                  We'll send a 6-digit OTP verification code.
+                  <span className="text-indigo-600 font-black">
+                    2.
+                  </span>
+
+                  We'll send a 6-digit OTP
+                  verification code.
                 </li>
 
                 <li className="flex gap-2">
-                  <span className="text-grey-600 font-black">3.</span>
-                  Check spam or promotions folder if you don't see the email.
+                  <span className="text-indigo-600 font-black">
+                    3.
+                  </span>
+
+                  Check spam or promotions folder if
+                  you don't see the email.
                 </li>
 
                 <li className="flex gap-2">
-                  <span className="text-grey-600 font-black">4.</span>
-                  OTP expires after a few minutes for security reasons.
+                  <span className="text-indigo-600 font-black">
+                    4.
+                  </span>
+
+                  OTP expires after a few minutes for
+                  security reasons.
                 </li>
 
               </ul>
             </div>
 
             {/* Button */}
-            <button
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
               disabled={loading}
-              className="w-full bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-2xl transition-all active:scale-[0.98] shadow-lg shadow-slate-200 disabled:opacity-50 text-sm mt-2"
+              className="w-full bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-slate-200 disabled:opacity-50 text-sm mt-2"
             >
-              {loading ? 'Sending OTP...' : 'Request Reset Code'}
-            </button>
+              {loading
+                ? 'Sending OTP...'
+                : 'Request Reset Code'}
+            </motion.button>
           </form>
         ) : (
 
           /* STEP 2 */
-          <form onSubmit={handleResetPassword} className="space-y-4">
+          <form
+            onSubmit={handleResetPassword}
+            className="space-y-4"
+          >
 
             {/* OTP */}
             <div className="relative group">
@@ -220,11 +311,16 @@ const ForgotPassword = () => {
               <input
                 type="text"
                 required
-                maxLength="6"
+                maxLength={6}
                 placeholder="6-Digit OTP"
                 className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-slate-700 placeholder:text-slate-400 outline-none focus:bg-white focus:border-indigo-600/30 focus:ring-4 focus:ring-indigo-600/5 transition-all text-sm font-bold tracking-[0.3em]"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value)}
+                onChange={(e) =>
+                  setOtp(
+                    e.target.value.replace(/\D/g, '')
+                  )
+                }
+                disabled={loading}
               />
             </div>
 
@@ -241,37 +337,58 @@ const ForgotPassword = () => {
                 placeholder="New password"
                 className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-slate-700 placeholder:text-slate-400 outline-none focus:bg-white focus:border-indigo-600/30 focus:ring-4 focus:ring-indigo-600/5 transition-all text-sm font-medium"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={(e) =>
+                  setNewPassword(e.target.value)
+                }
+                disabled={loading}
               />
             </div>
 
-            {/* Security Tips */}
+            {/* Tips */}
             <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
 
               <div className="flex items-center gap-2 mb-3">
-                <MdInfoOutline className="text-indigo-600" size={18} />
+                <MdInfoOutline
+                  className="text-indigo-600"
+                  size={18}
+                />
+
                 <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
                   Password Tips
                 </h4>
               </div>
 
               <ul className="space-y-2 text-[11px] text-slate-500 font-medium leading-relaxed">
+                <li>
+                  • Use at least 8 characters
+                </li>
 
-                <li>• Use at least 8 characters</li>
-                <li>• Include uppercase & lowercase letters</li>
-                <li>• Add numbers or special characters</li>
-                <li>• Avoid common passwords</li>
+                <li>
+                  • Include uppercase & lowercase
+                  letters
+                </li>
 
+                <li>
+                  • Add numbers or special characters
+                </li>
+
+                <li>
+                  • Avoid common passwords
+                </li>
               </ul>
             </div>
 
             {/* Submit */}
-            <button
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
               disabled={loading}
-              className="w-full bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-2xl transition-all active:scale-[0.98] shadow-lg shadow-slate-200 disabled:opacity-50 text-sm mt-2"
+              className="w-full bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-slate-200 disabled:opacity-50 text-sm mt-2"
             >
-              {loading ? 'Updating...' : 'Update Password'}
-            </button>
+              {loading
+                ? 'Updating...'
+                : 'Update Password'}
+            </motion.button>
 
             {/* Retry */}
             <button
@@ -284,7 +401,7 @@ const ForgotPassword = () => {
 
           </form>
         )}
-      </div>
+      </motion.div>
 
       <style>{`
         body {

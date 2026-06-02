@@ -1,163 +1,210 @@
-import React, { useState } from "react";
-import { MdOutlineVisibility, MdOutlineVisibilityOff, MdAlternateEmail, MdLockOutline, MdPersonOutline } from "react-icons/md";
-import { signupapi } from "../../api/api";
-import { useNavigate, Link } from "react-router-dom";
-
-import Logo from "../../assets/goto.png";
+import React, { useState } from 'react';
+import { MdOutlineVisibility, MdOutlineVisibilityOff, MdAlternateEmail, MdLockOutline, MdPersonOutline } from 'react-icons/md';
+import { signupapi } from '../../api/api';
+import { useNavigate, Link } from 'react-router-dom';
+import { useTheme } from '../../context/ThemeContext';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import AuthLayout from '../layouts/AuthLayout';
 
 const Signup = () => {
   const navigate = useNavigate();
-  const [signup, setSignup] = useState({
-    username: "",
-    email: "",
-    password: "",
-    role: "user",
+  const { isDark } = useTheme();
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
   });
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [type, setType] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setSignup((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage("");
 
     try {
-      const res = await signupapi(signup);
+      const res = await signupapi(formData);
       if (res) {
-        setMessage("Account created successfully 🎉");
-        setType("success");
-        setTimeout(() => navigate('/login'), 2000);
+        toast.success('Account created successfully! 🎉');
+        setTimeout(() => navigate('/login'), 1500);
       }
     } catch (err) {
-      setMessage(err.response?.data?.message || "Signup failed. Try again.");
-      setType("error");
+      toast.error(err.response?.data?.message || 'Signup failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const inputClasses = (isDark) => ({
+    container: `flex items-center border rounded-lg transition-all duration-200 ${
+      isDark
+        ? 'bg-slate-800 border-slate-700 focus-within:border-indigo-500'
+        : 'bg-white border-slate-300 focus-within:border-indigo-500'
+    }`,
+    icon: `ml-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`,
+    input: `flex-1 px-4 py-3 bg-transparent border-0 outline-none text-sm ${
+      isDark
+        ? 'text-white placeholder-slate-500'
+        : 'text-slate-900 placeholder-slate-400'
+    }`,
+  });
+
   return (
-    <div className="min-h-screen w-full bg-[#f8fafc] flex flex-col items-center justify-center p-4 selection:bg-indigo-100 overflow-x-hidden font-sans relative">
-      
-      {/* Background Decor */}
-      <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-100/40 blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-80 h-80 bg-pink-50/50 blur-[120px] pointer-events-none"></div>
-
-      {/* BRAND LOGO SECTION */}
-      <div className="mb-6 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-1000">
-        <div className="relative group">
-          <div className="absolute inset-0 bg-indigo-400/20 blur-2xl rounded-full scale-150 group-hover:bg-indigo-400/40 transition-all duration-500"></div>
-          <img 
-            src={Logo} 
-            alt="Hash-Tag Logo" 
-            className="w-20 h-20 md:w-24 md:h-24 object-contain relative z-10 drop-shadow-2xl hover:scale-105 transition-transform duration-300 ease-out animate-bounce-slow"
-          />
-        </div>
-      </div>
-
-      <div className="w-full max-w-[400px] bg-white rounded-[2.5rem] p-7 md:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 relative z-10">
-        
-        {/* Header */}
-        <div className="flex flex-col items-center mb-6 md:mb-8">
-          <h2 className="text-slate-800 text-2xl md:text-3xl font-black tracking-tight text-center leading-tight">Create an account</h2>
-          <p className="text-slate-400 text-xs md:text-sm font-semibold mt-1">Join Go2</p>
-        </div>
-
-        {message && (
-          <div className={`mb-5 p-3.5 rounded-2xl text-[11px] font-bold text-center border animate-in fade-in zoom-in duration-300 ${
-            type === "success" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-red-50 text-red-600 border-red-100"
+    <AuthLayout
+      title="Create Account"
+      subtitle="Join Goto to start shortening and tracking your links"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="username" className={`block text-sm font-semibold mb-2 ${
+            isDark ? 'text-slate-300' : 'text-slate-700'
           }`}>
-            {message}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-3.5">
-          {/* USERNAME */}
-          <div className="relative group">
-            <MdPersonOutline className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
+            Username
+          </label>
+          <div className={inputClasses(isDark).container}>
+            <MdPersonOutline className={`${inputClasses(isDark).icon} text-lg`} />
             <input
+              id="username"
               type="text"
               name="username"
               required
-              value={signup.username}
+              value={formData.username}
               onChange={handleChange}
-              placeholder="Username"
-              className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3.5 pl-12 pr-4 text-slate-700 placeholder:text-slate-400 outline-none focus:bg-white focus:border-indigo-600/30 focus:ring-4 focus:ring-indigo-600/5 transition-all text-sm font-medium"
+              placeholder="johndoe"
+              className={inputClasses(isDark).input}
+              disabled={loading}
             />
           </div>
+        </div>
 
-          {/* EMAIL */}
-          <div className="relative group">
-            <MdAlternateEmail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
+        <div>
+          <label htmlFor="email" className={`block text-sm font-semibold mb-2 ${
+            isDark ? 'text-slate-300' : 'text-slate-700'
+          }`}>
+            Email Address
+          </label>
+          <div className={inputClasses(isDark).container}>
+            <MdAlternateEmail className={`${inputClasses(isDark).icon} text-lg`} />
             <input
+              id="email"
               type="email"
               name="email"
               required
-              value={signup.email}
+              value={formData.email}
               onChange={handleChange}
-              placeholder="Email address"
-              className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3.5 pl-12 pr-4 text-slate-700 placeholder:text-slate-400 outline-none focus:bg-white focus:border-indigo-600/30 focus:ring-4 focus:ring-indigo-600/5 transition-all text-sm font-medium"
+              placeholder="you@example.com"
+              className={inputClasses(isDark).input}
+              disabled={loading}
             />
           </div>
+        </div>
 
-          {/* PASSWORD */}
-          <div className="relative group">
-            <MdLockOutline className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
+        <div>
+          <label htmlFor="password" className={`block text-sm font-semibold mb-2 ${
+            isDark ? 'text-slate-300' : 'text-slate-700'
+          }`}>
+            Password
+          </label>
+          <div className={inputClasses(isDark).container}>
+            <MdLockOutline className={`${inputClasses(isDark).icon} text-lg`} />
             <input
-              type={showPassword ? "text" : "password"}
+              id="password"
+              type={showPassword ? 'text' : 'password'}
               name="password"
               required
-              value={signup.password}
+              value={formData.password}
               onChange={handleChange}
-              placeholder="Password"
-              className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3.5 pl-12 pr-12 text-slate-700 placeholder:text-slate-400 outline-none focus:bg-white focus:border-indigo-600/30 focus:ring-4 focus:ring-indigo-600/5 transition-all text-sm font-medium"
+              placeholder="••••••••"
+              className={inputClasses(isDark).input}
+              disabled={loading}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              className={`mr-3 transition-colors duration-200 ${
+                isDark
+                  ? 'text-slate-500 hover:text-slate-400'
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
             >
-              {showPassword ? <MdOutlineVisibilityOff size={20} /> : <MdOutlineVisibility size={20} />}
+              {showPassword ? (
+                <MdOutlineVisibilityOff size={20} />
+              ) : (
+                <MdOutlineVisibility size={20} />
+              )}
             </button>
           </div>
+        </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-2xl transition-all active:scale-[0.98] shadow-lg shadow-slate-200 disabled:opacity-50 text-sm mt-2"
-          >
-            {loading ? "Creating account..." : "Sign Up"}
-          </button>
-        </form>
+        <div className={`text-xs space-y-1 p-3 rounded-lg ${
+          isDark
+            ? 'bg-slate-800/50 text-slate-400'
+            : 'bg-slate-100 text-slate-600'
+        }`}>
+          <p className="font-semibold">Password requirements:</p>
+          <ul className="space-y-0.5 ml-4">
+            <li>• At least 8 characters</li>
+            <li>• Mix of uppercase and lowercase</li>
+          </ul>
+        </div>
 
-        <p className="text-center text-slate-500 text-xs mt-8">
-          Already have an account?{" "}
-          <Link to="/login" className="text-indigo-600 hover:text-green-900 font-bold  decoration-indigo-600/20 transition-all">
-            Login
-          </Link>
-        </p>
-      </div>
-      
-      <style>{`
-        body { background-color: #f8fafc; }
-        ::-webkit-scrollbar { width: 0px; }
-        @keyframes bounce-slow {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
-        }
-        .animate-bounce-slow {
-          animation: bounce-slow 4s ease-in-out infinite;
-        }
-      `}</style>
-    </div>
+        <motion.button
+          type="submit"
+          disabled={loading}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white font-semibold transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {loading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span>Creating account...</span>
+            </>
+          ) : (
+            'Create Account'
+          )}
+        </motion.button>
+      </form>
+
+      <p className={`text-center text-xs mt-4 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+        By signing up, you agree to our{' '}
+        <button className={`font-medium transition-colors duration-200 ${
+          isDark
+            ? 'text-indigo-400 hover:text-indigo-300'
+            : 'text-indigo-600 hover:text-indigo-700'
+        }`}>
+          Terms of Service
+        </button>
+        {' '}and{' '}
+        <button className={`font-medium transition-colors duration-200 ${
+          isDark
+            ? 'text-indigo-400 hover:text-indigo-300'
+            : 'text-indigo-600 hover:text-indigo-700'
+        }`}>
+          Privacy Policy
+        </button>
+      </p>
+
+      <p className={`text-center text-sm mt-6 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+        Already have an account?{' '}
+        <Link
+          to="/login"
+          className={`font-semibold transition-colors duration-200 ${
+            isDark
+              ? 'text-indigo-400 hover:text-indigo-300'
+              : 'text-indigo-600 hover:text-indigo-700'
+          }`}
+        >
+          Sign In
+        </Link>
+      </p>
+    </AuthLayout>
   );
 };
 

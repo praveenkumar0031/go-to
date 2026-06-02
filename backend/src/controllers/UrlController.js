@@ -2,6 +2,7 @@ const { nanoid } = require('nanoid');
 const Url = require('../models/url.js');
 const Analytics = require('../models/analytics.js'); // Import this to clean up data on delete
 
+
 // 1. CREATE (Updated with Custom Alias support)
 const createShortUrl = async (req, res) => {
   try {
@@ -120,42 +121,52 @@ const deleteUrl = async (req, res) => {
 
 
 
-// 1. GET ALL SHORT URLS OF LOGGED-IN USER
+
+
 const getUserUrls = async (req, res) => {
-
   try {
-
     const userId = req.user.id;
 
-    const urls = await Url.find(
-      { userId },
-      {
-        createdAt: -1
-      }
-    )
-    .sort({ createdAt: -1 });
+    // 1. Fetch all URLs for the user. 
+    // We add .lean() which converts Mongoose documents into plain JavaScript objects,
+    // allowing us to easily add the totalClicks property to them.
+    const urls = await Url.find({ userId }).sort({ createdAt: -1 }).lean();
 
+    // 2. Extract just the IDs so we can query the Analytics collection
+    const urlIds = urls.map(url => url._id);
+
+    // 3. Fetch all Aggregated Analytics documents that match these URLs
+    const analyticsData = await Analytics.find({ urlId: { $in: urlIds } }).lean();
+
+    // 4. Merge the totalClicks into our URL array
+    const urlsWithStats = urls.map(url => {
+      // Find the analytics doc that belongs to this specific URL
+      const match = analyticsData.find(
+        (a) => a.urlId.toString() === url._id.toString()
+      );
+
+      return {
+        ...url,
+        // If a match is found, attach its totalClicks. If not, default to 0.
+        totalClicks: match && match.totalClicks ? match.totalClicks : 0
+      };
+    });
+
+    // 5. Send the merged data to React!
     res.status(200).json({
       success: true,
-      count: urls.length,
-      urls
+      count: urlsWithStats.length,
+      urls: urlsWithStats
     });
 
   } catch (error) {
-
-    console.error(
-      'Error fetching URLs:',
-      error
-    );
-
+    console.error('Error fetching URLs:', error);
     res.status(500).json({
       success: false,
-      error:
-        'Server error while fetching URLs.'
+      error: 'Server error while fetching URLs.'
     });
   }
 };
-
 
 
 module.exports = {

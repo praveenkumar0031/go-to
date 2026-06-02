@@ -4,7 +4,7 @@ npm install react-router-dom
 npm install react-icons
 npm install tailwindcss @tailwindcss/vite
 npm install lucide-react framer-motion
-
+npm install qrcode
 backend=> npm install express
 npm install mongoose
 npm install cors
