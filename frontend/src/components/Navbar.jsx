@@ -17,7 +17,7 @@ const Navbar = ({ toggleSidebar, user }) => {
   const initial = user?.name ? user.name[0].toUpperCase() : (user?.email ? user.email[0].toUpperCase() : 'U');
 
   return (
-    <header className={`h-16 border-b flex items-center justify-between px-4 md:px-8 z-30 sticky top-0 backdrop-blur-md transition-all duration-300 ${isDark ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
+    <header className={`h-20 border-b flex items-center justify-between px-4 md:px-8 z-30 sticky top-0 backdrop-blur-md transition-all duration-300 ${isDark ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
       <button 
         onClick={toggleSidebar}
         className="lg:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"

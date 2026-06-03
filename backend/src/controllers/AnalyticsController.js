@@ -1,10 +1,11 @@
 const Url = require('../models/url.js');
 const Analytics = require('../models/analytics.js');
+const dotenv = require("dotenv");
 const UAParser = require('ua-parser-js');
 const geoip = require('geoip-lite');
 const Log = require('../models/log.js');
 const mongoose=require("mongoose");
-
+dotenv.config();
   const handleRedirect = async (req, res) => {
   try {
     const { shortCode } = req.params;
@@ -18,16 +19,9 @@ const mongoose=require("mongoose");
 
     // Check if the link has expired
     if (urlData.expiresAt && new Date() > urlData.expiresAt) {
-      return res.status(410).send(`
-        <html>
-          <head><title>Link Expired</title></head>
-          <body style="font-family: sans-serif; text-align: center; padding-top: 50px;">
-            <h1>410 Gone</h1>
-            <p>This link has expired and is no longer available.</p>
-          </body>
-        </html>
-      `);
-    }
+  res.redirect(`${process.env.FRONTEND_URL}/expired`); // 1st response sent!
+  return res.status(200).send({"message":"This link has expired."}); // 2nd response attempted! BOOM!
+}
 
     // 1. Redirect immediately (Zero latency for the user)
     res.redirect(urlData.originalUrl);

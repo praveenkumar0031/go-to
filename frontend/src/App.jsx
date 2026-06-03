@@ -18,7 +18,6 @@ import History from './pages/History';
 import Analytics from './pages/Analytics';
 import QrCodePage from './pages/QrCodePage';
 import NotFound from './pages/NotFound';
-
 /**
  * App Component
  * Main routing component with protected and public routes
@@ -52,12 +51,13 @@ const App = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/forget" element={<ForgotPassword />} />
+      <Route path="/" element={<Landing />} />
+      <Route path="/expired" element={<NotFound />} />
 
       {/* ==================== PROTECTED ROUTES (DashboardLayout) ==================== */}
       {user ? (
         <Route element={<DashboardLayout user={user} />}>
-          {/* Landing Page */}
-          <Route path="/" element={<Landing />} />
+          
 
           {/* Dashboard - Main page with URL input & cards grid */}
           <Route path="/dashboard" element={<Dashboard />} />

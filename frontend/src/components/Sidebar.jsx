@@ -31,12 +31,11 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed, setIsCollapsed }) => {
         ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}
       `}>
         {/* Header/Logo Section */}
-        <div className={`h-16 flex items-center justify-between px-6 border-b border-inherit transition-all duration-300 ${isCollapsed ? 'lg:px-4 lg:justify-center' : ''}`}>
-          <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
-            <GotoLogo size="ls" />
-            
+        <div className={`h-20 flex items-center justify-center border-b border-inherit transition-all duration-300`}>
+          <div className="flex items-center justify-center overflow-hidden">
+            <GotoLogo size="" />
           </div>
-          <button onClick={() => setIsOpen(false)} className="lg:hidden p-1 rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+          <button onClick={() => setIsOpen(false)} className="lg:hidden absolute right-4 p-1 rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <X size={20} />
           </button>
         </div>

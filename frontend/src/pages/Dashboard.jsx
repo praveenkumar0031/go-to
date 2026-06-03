@@ -166,7 +166,7 @@ const Dashboard = () => {
 
   const handleCopy = (shortCode, e) => {
     if (e) e.stopPropagation();
-    const fullUrl = `${import.meta.env.VITE_REDIRECT_API || 'http://localhost:8000/goto'}/${shortCode}`;
+    const fullUrl = `${import.meta.env.VITE_REDIRECT_API}/${shortCode}`;
     navigator.clipboard.writeText(fullUrl);
     setCopiedId(shortCode);
     setTimeout(() => setCopiedId(null), 2000);
@@ -214,7 +214,7 @@ const Dashboard = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div className="space-y-1">
           <h1 className={`text-4xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            Welcome back, {user?.name || 'User'}
+            Welcome back, {user?.username || 'User'}
           </h1>
           <p className={`text-lg font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             Here's what's happening with your links today.

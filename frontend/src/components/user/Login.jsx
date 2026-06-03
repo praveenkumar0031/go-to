@@ -62,7 +62,7 @@ const Login = () => {
   const googleLogin = useGoogleLogin({
     flow: 'auth-code',
     ux_mode: 'redirect',
-    redirect_uri: `${import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173'}/login`,
+    redirect_uri: `${import.meta.env.VITE_FRONTEND_URL}/login`,
   });
 
   const handleChange = (e) => {
