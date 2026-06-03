@@ -43,10 +43,14 @@ const Dashboard = () => {
   // --- Module 2: Data Processing for Charts ---
   const growthData = useMemo(() => {
     const counts = {};
-    urls.forEach(url => {
+    // Sort URLs by createdAt first to ensure chronological counting
+    const sortedUrls = [...urls].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    
+    sortedUrls.forEach(url => {
       const date = format(new Date(url.createdAt), 'MMM dd');
       counts[date] = (counts[date] || 0) + 1;
     });
+    
     return Object.entries(counts).map(([date, count]) => ({ date, count }));
   }, [urls]);
 
@@ -64,7 +68,7 @@ const Dashboard = () => {
     });
 
     return [
-      { name: 'Live', value: live, color: '#10b981' }, // emerald-500
+      { name: 'Live', value: live, color: '#6366f1' }, // indigo-500
       { name: 'Expired', value: expired, color: '#f43f5e' } // rose-500
     ];
   }, [urls]);
@@ -202,80 +206,73 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with Module 1: Profile Widget */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>My Links</h1>
-          <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Manage and track your shortened URLs</p>
+    <div className="space-y-8 pb-12">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div className="space-y-1">
+          <h1 className={`text-4xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            Welcome back, {user?.name || 'User'}
+          </h1>
+          <p className={`text-lg font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Here's what's happening with your links today.
+          </p>
         </div>
         
-        <div className="flex items-center flex-wrap gap-4">
-          {/* Module 1: User Profile Widget */}
-          <div className="flex items-center gap-3 pr-4 border-r border-slate-200 dark:border-slate-800">
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm ${isDark ? 'bg-slate-800 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
-              {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
-            </div>
-            <div className="hidden md:block">
-              <p className={`text-xs font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Welcome back,</p>
-              <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{user?.name || 'User'}</p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <div className="flex flex-col items-end gap-1">
-              <button
-                onClick={() => setIsBulkModalOpen(true)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700' : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200'}`}
-              >
-                <UploadCloud size={18} /> Bulk Upload
-              </button>
-              {/* Module 4: Template Link */}
-              <button 
-                onClick={handleDownloadTemplate}
-                className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
-              >
-                <Download size={10} /> Download Template
-              </button>
-            </div>
-
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col items-end gap-1">
             <button
-              onClick={() => navigate('/dashboard/create')}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors h-[42px]"
+              onClick={() => setIsBulkModalOpen(true)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all duration-200 border ${isDark ? 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-800' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'}`}
             >
-              <Plus size={18} /> Create Link
+              <UploadCloud size={18} className="text-indigo-500" /> Bulk Upload
+            </button>
+            <button 
+              onClick={handleDownloadTemplate}
+              className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1.5 px-1"
+            >
+              <Download size={12} /> CSV Template
             </button>
           </div>
+
+          <button
+            onClick={() => navigate('/dashboard/create')}
+            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all duration-200 shadow-lg shadow-indigo-600/20 active:scale-95 h-[48px]"
+          >
+            <Plus size={20} /> Create Link
+          </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Stats Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {[
-          { label: 'Total Links', value: urls.length, icon: LinkIcon, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-          { label: 'Total Clicks', value: totalClicks, icon: MousePointerClick, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
-          { label: 'Active Links', value: activeLinks, icon: Activity, color: 'text-green-500', bg: 'bg-green-500/10' }
+          { label: 'Total Links', value: urls.length, icon: LinkIcon, color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+          { label: 'Total Clicks', value: totalClicks.toLocaleString(), icon: MousePointerClick, color: 'text-indigo-500', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20' },
+          { label: 'Active Links', value: activeLinks, icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' }
         ].map((stat, i) => (
-          <div key={i} className={`p-6 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-            <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-lg ${stat.bg} ${stat.color}`}>
-                <stat.icon size={24} />
+          <div key={i} className={`p-6 rounded-2xl border transition-all duration-300 hover:shadow-xl ${isDark ? 'bg-slate-900 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
+            <div className="flex items-center gap-5">
+              <div className={`p-4 rounded-xl ${stat.bg} ${stat.color} ${stat.border} border`}>
+                <stat.icon size={28} />
               </div>
               <div>
-                <p className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{stat.label}</p>
-                <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{stat.value}</h3>
+                <p className={`text-sm font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{stat.label}</p>
+                <h3 className={`text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{stat.value}</h3>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Module 2: Global Analytics Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* URL Growth Timeline */}
-        <div className={`p-6 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <h3 className={`text-lg font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>Link Creation Growth</h3>
-          <div className="h-[300px]">
+      {/* Analytics Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* URL Growth Timeline Card */}
+        <div className={`p-8 rounded-3xl border transition-all duration-300 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div className="flex items-center justify-between mb-8">
+            <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Link Creation Growth</h3>
+            <div className={`px-3 py-1 rounded-full text-xs font-bold ${isDark ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>Last 30 Days</div>
+          </div>
+          <div className="h-[320px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={growthData}>
                 <defs>
@@ -284,42 +281,86 @@ const Dashboard = () => {
                     <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#e2e8f0'} />
-                <XAxis dataKey="date" stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: isDark ? '#0f172a' : '#fff', border: 'none', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                  itemStyle={{ color: '#6366f1' }}
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#f1f5f9'} />
+                <XAxis 
+                  dataKey="date" 
+                  stroke={isDark ? '#475569' : '#94a3b8'} 
+                  fontSize={11} 
+                  fontWeight={600}
+                  tickLine={false} 
+                  axisLine={false} 
+                  dy={10}
                 />
-                <Area type="monotone" dataKey="count" stroke="#6366f1" fillOpacity={1} fill="url(#colorCount)" strokeWidth={3} />
+                <YAxis 
+                  stroke={isDark ? '#475569' : '#94a3b8'} 
+                  fontSize={11} 
+                  fontWeight={600}
+                  tickLine={false} 
+                  axisLine={false} 
+                />
+                <Tooltip 
+                  cursor={{ stroke: '#6366f1', strokeWidth: 2 }}
+                  contentStyle={{ 
+                    backgroundColor: isDark ? '#0f172a' : '#fff', 
+                    border: '1px solid ' + (isDark ? '#1e293b' : '#e2e8f0'), 
+                    borderRadius: '16px', 
+                    boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+                    padding: '12px'
+                  }}
+                  itemStyle={{ color: '#6366f1', fontWeight: 700 }}
+                  labelStyle={{ color: isDark ? '#94a3b8' : '#64748b', marginBottom: '4px', fontWeight: 600 }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="#6366f1" 
+                  fillOpacity={1} 
+                  fill="url(#colorCount)" 
+                  strokeWidth={4} 
+                  animationDuration={1500}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Link Status Health */}
-        <div className={`p-6 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <h3 className={`text-lg font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>Link Status Health</h3>
-          <div className="h-[300px]">
+        {/* Link Status Health Card */}
+        <div className={`p-8 rounded-3xl border transition-all duration-300 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <h3 className={`text-xl font-bold mb-8 ${isDark ? 'text-white' : 'text-slate-900'}`}>Link Status Health</h3>
+          <div className="h-[320px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={healthData}
                   cx="50%"
-                  cy="50%"
-                  innerRadius={70}
-                  outerRadius={90}
-                  paddingAngle={8}
+                  cy="45%"
+                  innerRadius={80}
+                  outerRadius={105}
+                  paddingAngle={10}
                   dataKey="value"
+                  stroke="none"
                 >
                   {healthData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
                 <Tooltip 
-                  contentStyle={{ backgroundColor: isDark ? '#0f172a' : '#fff', border: 'none', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                  contentStyle={{ 
+                    backgroundColor: isDark ? '#0f172a' : '#fff', 
+                    border: '1px solid ' + (isDark ? '#1e293b' : '#e2e8f0'), 
+                    borderRadius: '16px', 
+                    boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+                    padding: '12px'
+                  }}
                 />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                <Legend 
+                  verticalAlign="bottom" 
+                  align="center"
+                  iconType="circle" 
+                  iconSize={10}
+                  wrapperStyle={{ paddingTop: '20px' }}
+                  formatter={(value) => <span className={`text-sm font-bold ml-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{value}</span>}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>

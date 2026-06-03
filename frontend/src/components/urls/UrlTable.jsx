@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { Copy, Trash2, ExternalLink, Edit2, ChevronDown } from 'lucide-react';
+import { Copy, Trash2, ExternalLink, Edit2, ChevronDown, MousePointerClick } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -86,175 +86,157 @@ const UrlTable = ({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`rounded-2xl overflow-hidden border transition-colors duration-300 ${
+      className={`rounded-3xl overflow-hidden border transition-all duration-300 ${
         isDark
-          ? 'bg-slate-900 border-slate-800'
-          : 'bg-white border-slate-200'
+          ? 'bg-slate-900 border-slate-800 shadow-2xl shadow-indigo-500/5'
+          : 'bg-white border-slate-200 shadow-xl shadow-slate-200/50'
       }`}
     >
-      {/* Header */}
-      <div className={`p-6 border-b transition-colors duration-300 ${
-        isDark
-          ? 'bg-slate-900 border-slate-800'
-          : 'bg-white border-slate-200'
+      {/* Table Header Section */}
+      <div className={`p-8 border-b transition-colors duration-300 ${
+        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
       }`}>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className={`text-2xl font-bold ${
+            <h2 className={`text-2xl font-bold tracking-tight ${
               isDark ? 'text-white' : 'text-slate-900'
             }`}>
               Your Links
             </h2>
-            <p className={`text-sm mt-1 ${
-              isDark ? 'text-slate-400' : 'text-slate-600'
+            <p className={`text-sm font-medium mt-1 ${
+              isDark ? 'text-slate-400' : 'text-slate-500'
             }`}>
-              Manage all {urls.length} shortened URL{urls.length !== 1 ? 's' : ''}
+              Manage and monitor all your active short links.
             </p>
           </div>
-          <div className={`text-right`}>
-            <p className={`text-3xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 dark:from-indigo-400 dark:to-blue-400 bg-clip-text text-transparent`}>
-              {urls.length}
-            </p>
-            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              Total Links
-            </p>
+          <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20">
+            <span className="text-2xl font-black text-indigo-500">{urls.length}</span>
+            <span className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-indigo-400/60' : 'text-indigo-600/60'}`}>Total Links</span>
           </div>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className={`transition-colors duration-300 ${
-            isDark
-              ? 'bg-slate-800/50'
-              : 'bg-slate-50'
-          }`}>
-            <tr>
-              <th className={`text-left p-4 text-sm font-semibold ${
-                isDark ? 'text-slate-300' : 'text-slate-700'
+      {/* Responsive Table Wrapper */}
+      <div className="overflow-x-auto custom-scrollbar">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className={`transition-colors duration-300 ${
+              isDark ? 'bg-slate-800/50' : 'bg-slate-50'
+            }`}>
+              <th className={`text-left p-5 text-xs font-bold uppercase tracking-widest ${
+                isDark ? 'text-slate-500' : 'text-slate-400'
               }`}>
-                Original URL
+                Destination & Short Link
               </th>
-              <th className={`text-left p-4 text-sm font-semibold ${
-                isDark ? 'text-slate-300' : 'text-slate-700'
+              <th className={`text-left p-5 text-xs font-bold uppercase tracking-widest ${
+                isDark ? 'text-slate-500' : 'text-slate-400'
               }`}>
-                Short Code
+                Performance
               </th>
-              <th className={`text-left p-4 text-sm font-semibold ${
-                isDark ? 'text-slate-300' : 'text-slate-700'
-              }`}>
-                Clicks
-              </th>
-              <th className={`text-left p-4 text-sm font-semibold ${
-                isDark ? 'text-slate-300' : 'text-slate-700'
+              <th className={`text-left p-5 text-xs font-bold uppercase tracking-widest ${
+                isDark ? 'text-slate-500' : 'text-slate-400'
               }`}>
                 Created
               </th>
-              <th className={`text-right p-4 text-sm font-semibold ${
-                isDark ? 'text-slate-300' : 'text-slate-700'
+              <th className={`text-right p-5 text-xs font-bold uppercase tracking-widest ${
+                isDark ? 'text-slate-500' : 'text-slate-400'
               }`}>
                 Actions
               </th>
             </tr>
           </thead>
 
-          <tbody>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             <AnimatePresence>
               {urls.map((url, idx) => (
                 <motion.tr
                   key={url._id}
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className={`border-t transition-colors duration-200 ${
-                    isDark
-                      ? 'border-slate-800 hover:bg-slate-800/50'
-                      : 'border-slate-200 hover:bg-slate-50'
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  transition={{ delay: idx * 0.03 }}
+                  className={`group transition-all duration-200 ${
+                    isDark ? 'hover:bg-slate-800/40' : 'hover:bg-indigo-50/30'
                   }`}
                 >
-                  {/* Original URL */}
-                  <td className="p-4">
-                    <div className={`max-w-xs truncate text-sm ${
-                      isDark ? 'text-slate-300' : 'text-slate-700'
-                    }`}>
-                      {url.originalUrl}
+                  {/* Destination & Link Column */}
+                  <td className="p-5">
+                    <div className="flex flex-col gap-1.5 max-w-md">
+                      <div className={`text-sm font-bold truncate ${
+                        isDark ? 'text-slate-200' : 'text-slate-900'
+                      }`} title={url.originalUrl}>
+                        {url.originalUrl}
+                      </div>
+                      <a
+                        href={`${window.location.origin}/${url.shortCode}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-indigo-500 hover:text-indigo-600 font-bold text-sm w-fit transition-colors"
+                      >
+                        <span className="font-mono">/{url.shortCode}</span>
+                        <ExternalLink size={12} className="opacity-50" />
+                      </a>
                     </div>
                   </td>
 
-                  {/* Short Code */}
-                  <td className="p-4">
-                    <a
-                      href={`${window.location.origin}/${url.shortCode}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
-                    >
-                      <code className="text-sm font-mono">{url.shortCode}</code>
-                      <ExternalLink size={14} className="opacity-60" />
-                    </a>
+                  {/* Performance Column */}
+                  <td className="p-5">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-slate-800 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+                        <MousePointerClick size={14} />
+                      </div>
+                      <span className={`text-sm font-black ${
+                        isDark ? 'text-slate-200' : 'text-slate-900'
+                      }`}>
+                        {url.totalClicks || 0}
+                      </span>
+                    </div>
                   </td>
 
-                  {/* Clicks */}
-                  <td className="p-4">
-                    <span className={`text-sm font-semibold ${
-                      isDark ? 'text-slate-300' : 'text-slate-700'
+                  {/* Date Column */}
+                  <td className="p-5">
+                    <span className={`text-xs font-bold ${
+                      isDark ? 'text-slate-500' : 'text-slate-500'
                     }`}>
-                      {url.totalClicks || 0}
+                      {new Date(url.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                     </span>
                   </td>
 
-                  {/* Created Date */}
-                  <td className="p-4">
-                    <span className={`text-sm ${
-                      isDark ? 'text-slate-400' : 'text-slate-600'
-                    }`}>
-                      {new Date(url.createdAt).toLocaleDateString()}
-                    </span>
-                  </td>
-
-                  {/* Actions */}
-                  <td className="p-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                  {/* Actions Column */}
+                  <td className="p-5 text-right">
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-x-2 group-hover:translate-x-0">
                       <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.1, backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)' }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => copyUrl(url.shortCode)}
-                        className={`p-2 rounded-lg transition-colors duration-200 ${
-                          isDark
-                            ? 'hover:bg-slate-700 text-slate-400 hover:text-indigo-400'
-                            : 'hover:bg-slate-100 text-slate-600 hover:text-indigo-600'
+                        className={`p-2.5 rounded-xl transition-colors ${
+                          isDark ? 'text-slate-400 hover:text-indigo-400' : 'text-slate-500 hover:text-indigo-600'
                         }`}
-                        title="Copy link"
+                        title="Copy Link"
                       >
                         <Copy size={16} />
                       </motion.button>
 
                       <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.1, backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)' }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => onEdit(url)}
-                        className={`p-2 rounded-lg transition-colors duration-200 ${
-                          isDark
-                            ? 'hover:bg-slate-700 text-slate-400 hover:text-blue-400'
-                            : 'hover:bg-slate-100 text-slate-600 hover:text-blue-600'
+                        className={`p-2.5 rounded-xl transition-colors ${
+                          isDark ? 'text-slate-400 hover:text-blue-400' : 'text-slate-500 hover:text-blue-600'
                         }`}
-                        title="Edit alias"
+                        title="Edit Alias"
                       >
                         <Edit2 size={16} />
                       </motion.button>
 
                       <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.1, backgroundColor: isDark ? 'rgba(244, 63, 94, 0.2)' : 'rgba(244, 63, 94, 0.1)' }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => onDelete(url._id)}
-                        className={`p-2 rounded-lg transition-colors duration-200 ${
-                          isDark
-                            ? 'hover:bg-slate-700 text-slate-400 hover:text-red-400'
-                            : 'hover:bg-slate-100 text-slate-600 hover:text-red-600'
+                        className={`p-2.5 rounded-xl transition-colors ${
+                          isDark ? 'text-slate-400 hover:text-rose-400' : 'text-slate-500 hover:text-rose-600'
                         }`}
-                        title="Delete link"
+                        title="Delete Link"
                       >
                         <Trash2 size={16} />
                       </motion.button>

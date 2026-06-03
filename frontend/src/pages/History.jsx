@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Clock, PlusCircle, MousePointerClick, Filter } from 'lucide-react';
+import { Clock, PlusCircle, MousePointerClick, Filter, Activity, Link as LinkIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTheme } from '../context/ThemeContext';
 import { getAllUrls, getAllLogs } from '../api/api';
@@ -82,59 +82,68 @@ const History = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Activity History</h1>
-          <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Timeline of all link creations and clicks</p>
+    <div className="space-y-8 max-w-5xl mx-auto pb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div className="space-y-1">
+          <h1 className={`text-4xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Activity History</h1>
+          <p className={`text-lg font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Timeline of all link creations and clicks</p>
         </div>
         
-        <div className={`flex items-center gap-2 p-1 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <Filter size={16} className={`ml-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+        <div className={`flex items-center gap-3 p-2 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+          <div className={`p-2 rounded-xl ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-400'}`}>
+            <Filter size={18} />
+          </div>
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className={`bg-transparent outline-none text-sm px-2 py-1 ${isDark ? 'text-white' : 'text-slate-900'}`}
+            className={`bg-transparent outline-none text-sm font-bold pr-4 cursor-pointer ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
           >
-            <option value="all">All Events</option>
-            <option value="create">Creations</option>
-            <option value="click">Clicks</option>
+            <option value="all">All Activities</option>
+            <option value="create">Link Creations</option>
+            <option value="click">Recent Clicks</option>
           </select>
         </div>
       </div>
 
-      <div className={`p-6 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+      <div className={`p-8 md:p-12 rounded-3xl border transition-all duration-300 ${isDark ? 'bg-slate-900 border-slate-800 shadow-2xl shadow-indigo-500/5' : 'bg-white border-slate-200 shadow-xl shadow-slate-200/50'}`}>
         {filteredEvents.length === 0 ? (
-          <div className="text-center py-10">
-            <Clock size={48} className={`mx-auto mb-4 ${isDark ? 'text-slate-700' : 'text-slate-300'}`} />
-            <h3 className={`text-lg font-medium mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>No activity yet</h3>
-            <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Create links and share them to see activity here.</p>
+          <div className="text-center py-20">
+            <div className={`w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`}>
+              <Clock size={40} className={isDark ? 'text-slate-600' : 'text-slate-300'} />
+            </div>
+            <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>No activity recorded</h3>
+            <p className={`text-sm font-medium max-w-xs mx-auto ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Start by creating a new link and sharing it with your audience.</p>
           </div>
         ) : (
-          <div className="relative border-l-2 ml-4 md:ml-6 space-y-8 pb-4" style={{ borderColor: isDark ? '#334155' : '#e2e8f0' }}>
-            {filteredEvents.map((event) => (
-              <div key={event.id} className="relative pl-8 md:pl-10">
-                {/* Timeline Icon */}
-                <div className={`absolute -left-3.5 md:-left-4 top-1 w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center border-4 ${isDark ? 'border-slate-900' : 'border-white'} ${event.type === 'create' ? 'bg-indigo-500 text-white' : 'bg-emerald-500 text-white'}`}>
-                  {event.type === 'create' ? <PlusCircle size={14} /> : <MousePointerClick size={14} />}
+          <div className="relative border-l-4 ml-4 md:ml-8 space-y-10 pb-4" style={{ borderColor: isDark ? '#1e293b' : '#f1f5f9' }}>
+            {filteredEvents.map((event, idx) => (
+              <div key={event.id} className="relative pl-10 md:pl-14">
+                {/* Timeline Node Icon */}
+                <div className={`absolute -left-[22px] top-0 w-10 h-10 rounded-2xl flex items-center justify-center border-4 transition-transform duration-300 hover:scale-110 ${isDark ? 'border-slate-900' : 'border-white'} ${event.type === 'create' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'}`}>
+                  {event.type === 'create' ? <PlusCircle size={18} /> : <MousePointerClick size={18} />}
                 </div>
 
-                <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{event.label}</span>
-                      <span className={`px-2 py-0.5 rounded text-xs font-mono font-medium ${isDark ? 'bg-slate-700 text-indigo-400' : 'bg-slate-200 text-indigo-700'}`}>
-                        {event.shortCode}
+                <div className={`p-6 rounded-2xl border transition-all duration-300 hover:shadow-lg ${isDark ? 'bg-slate-800/40 border-slate-700/50 hover:border-slate-600' : 'bg-slate-50/50 border-slate-100 hover:border-slate-200'}`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <span className={`text-lg font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{event.label}</span>
+                      <span className={`px-3 py-1 rounded-xl text-xs font-black tracking-widest uppercase ${isDark ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+                        /{event.shortCode}
                       </span>
                     </div>
-                    <div className={`text-xs flex items-center gap-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      <Clock size={12} />
-                      {format(event.timestamp, 'MMM dd, yyyy HH:mm')}
+                    <div className={`flex items-center gap-2 text-xs font-bold tracking-tight px-3 py-1.5 rounded-lg ${isDark ? 'bg-slate-800 text-slate-500' : 'bg-white text-slate-400 border border-slate-100'}`}>
+                      <Clock size={14} />
+                      {format(event.timestamp, 'MMM dd, yyyy • HH:mm')}
                     </div>
                   </div>
-                  <p className={`text-sm truncate ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                    {event.details}
-                  </p>
+                  <div className={`flex items-start gap-3 p-4 rounded-xl ${isDark ? 'bg-slate-900/50' : 'bg-white shadow-sm'}`}>
+                    <div className={`mt-1 flex-shrink-0 ${event.type === 'create' ? 'text-indigo-400' : 'text-emerald-400'}`}>
+                      {event.type === 'create' ? <LinkIcon size={14} /> : <Activity size={14} />}
+                    </div>
+                    <p className={`text-sm font-medium leading-relaxed break-all ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      {event.details}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
