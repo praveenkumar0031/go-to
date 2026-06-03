@@ -74,13 +74,13 @@ const AuthLayout = ({ children, title = 'Welcome Back', subtitle = 'Sign in to y
             <h1 className={`text-4xl font-bold mb-4 ${
               isDark ? 'text-white' : 'text-slate-900'
             }`}>
-              Premium URL<br />Shortening
+              URL Shorter & tracker
             </h1>
 
             <p className={`text-lg mb-8 ${
               isDark ? 'text-slate-400' : 'text-slate-600'
             }`}>
-              Track, manage, and optimize your links with advanced analytics and seamless integration.
+              Track, manage and optimize your links with advanced analytics and seamless integration.
             </p>
 
             {/* Feature List */}

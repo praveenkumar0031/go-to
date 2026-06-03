@@ -94,7 +94,7 @@ const Landing = () => {
 
       {/* Navbar */}
       <header className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
-        <GotoLogo size="lg" />
+        <GotoLogo size="xl" />
 
         <div className="flex items-center gap-4">
           <button
