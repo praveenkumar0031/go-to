@@ -30,7 +30,7 @@ const Dashboard = () => {
   const [copiedId, setCopiedId] = useState(null);
   const [selectedUrl, setSelectedUrl] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [editAlias, setEditAlias] = useState('');
+  const [editUrl, setEditUrl] = useState('');
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
   const { data: urlsData, isLoading } = useQuery({
@@ -141,12 +141,12 @@ const Dashboard = () => {
     mutationFn: ({ shortCode, data }) => updateShortUrl(shortCode, data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['urls'] });
-      toast.success('URL alias updated');
-      setSelectedUrl(prev => ({ ...prev, shortCode: data.shortCode || editAlias }));
+      toast.success('Destination URL updated');
+      setSelectedUrl(prev => ({ ...prev, originalUrl: data.originalUrl || editUrl }));
       setIsEditMode(false);
     },
     onError: (error) => {
-      toast.error(error.response?.data?.error || 'Failed to update alias');
+      toast.error(error.response?.data?.error || 'Failed to update destination');
     }
   });
 
@@ -180,7 +180,7 @@ const Dashboard = () => {
   const openModal = (url) => {
     setSelectedUrl(url);
     setIsEditMode(false);
-    setEditAlias(url.shortCode);
+    setEditUrl(url.originalUrl);
   };
 
   const closeModal = () => {
@@ -190,11 +190,11 @@ const Dashboard = () => {
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
-    if (!editAlias || editAlias === selectedUrl.shortCode) {
+    if (!editUrl || editUrl === selectedUrl.originalUrl) {
       setIsEditMode(false);
       return;
     }
-    updateMutation.mutate({ shortCode: selectedUrl.shortCode, data: { customAlias: editAlias } });
+    updateMutation.mutate({ shortCode: selectedUrl.shortCode, data: { originalUrl: editUrl } });
   };
 
   if (isLoading) {
@@ -475,13 +475,14 @@ const Dashboard = () => {
                 
                 {isEditMode ? (
                   <form onSubmit={handleEditSubmit} className="w-full mt-2">
-                    <label htmlFor="editAlias" className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Edit Alias</label>
+                    <label htmlFor="editUrl" className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Edit Destination URL</label>
                     <div className="flex gap-2">
                       <input
-                        id="editAlias"
-                        type="text"
-                        value={editAlias}
-                        onChange={(e) => setEditAlias(e.target.value)}
+                        id="editUrl"
+                        type="url"
+                        value={editUrl}
+                        onChange={(e) => setEditUrl(e.target.value)}
+                        placeholder="https://example.com"
                         className={`flex-1 px-3 py-2 rounded-lg border text-sm outline-none ${isDark ? 'bg-slate-800 border-slate-700 text-white focus:border-indigo-500' : 'bg-white border-slate-300 text-slate-900 focus:border-indigo-500'}`}
                       />
                       <button type="submit" disabled={updateMutation.isPending} className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium">
@@ -556,7 +557,7 @@ const Dashboard = () => {
                   className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-blue-400' : 'bg-slate-100 hover:bg-slate-200 text-blue-600'}`}
                 >
                   <Edit3 size={18} />
-                  <span className="text-xs font-medium">Edit Alias</span>
+                  <span className="text-xs font-medium">Edit URL</span>
                 </button>
                 <button
                   onClick={() => navigate(`/analytics/${selectedUrl.shortCode}`)}
