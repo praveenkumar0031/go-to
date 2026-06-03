@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, TrendingUp, Clock, Calendar, Users } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Clock, Calendar, Users, Monitor, Smartphone, Globe } from 'lucide-react';
 import { format, subDays, eachDayOfInterval, startOfDay, isSameDay } from 'date-fns';
 import {
   LineChart,
@@ -199,41 +199,61 @@ const Analytics = () => {
       {/* History Table */}
       <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
         <div className={`p-4 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-          <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Recent Visits</h3>
+          <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Recent Visitors</h3>
         </div>
         
         {(!data.recentVisits || !Array.isArray(data.recentVisits) || data.recentVisits.length === 0) ? (
-          <div className="p-8 text-center">
+          <div className="p-12 text-center">
+            <Users size={40} className={`mx-auto mb-4 ${isDark ? 'text-slate-700' : 'text-slate-300'}`} />
             <p className={isDark ? 'text-slate-400' : 'text-slate-500'}>No visits recorded yet.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className={`border-b text-sm ${isDark ? 'border-slate-800 text-slate-400 bg-slate-800/50' : 'border-slate-200 text-slate-500 bg-slate-50'}`}>
-                  <th className="p-4 font-medium">Timestamp</th>
-                  <th className="p-4 font-medium">Device / Browser</th>
-                  <th className="p-4 font-medium">Location</th>
-                  <th className="p-4 font-medium">IP Address</th>
+                <tr className={`border-b text-xs uppercase tracking-wider ${isDark ? 'border-slate-800 text-slate-500 bg-slate-800/30' : 'border-slate-200 text-slate-500 bg-slate-50'}`}>
+                  <th className="p-4 font-semibold">Timestamp</th>
+                  <th className="p-4 font-semibold">Device Info</th>
+                  <th className="p-4 font-semibold">Location</th>
+                  <th className="p-4 font-semibold">IP Address</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {(Array.isArray(data.recentVisits) ? data.recentVisits : []).map((visit, i) => (
-                  <tr key={visit._id || i} className={`border-b last:border-0 ${isDark ? 'border-slate-800 text-slate-300' : 'border-slate-200 text-slate-700'}`}>
-                    <td className="p-4">
-                      {format(new Date(visit.createdAt || visit.timestamp), 'MMM dd, yyyy HH:mm')}
-                    </td>
-                    <td className="p-4">
-                      {visit.deviceType || 'Unknown'} / {visit.browser || 'Unknown'}
-                    </td>
-                    <td className="p-4">
-                      {visit.country || 'Unknown'}
-                    </td>
-                    <td className="p-4 font-mono text-xs">
-                      {visit.ipAddress || 'Unknown'}
-                    </td>
-                  </tr>
-                ))}
+                {(Array.isArray(data.recentVisits) ? data.recentVisits : []).map((visit, i) => {
+                  const isMobile = visit.deviceType?.toLowerCase().includes('mobile') || visit.os?.toLowerCase().includes('android') || visit.os?.toLowerCase().includes('ios');
+                  return (
+                    <tr key={visit._id || i} className={`border-b last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors ${isDark ? 'border-slate-800 text-slate-300' : 'border-slate-200 text-slate-700'}`}>
+                      <td className="p-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <Clock size={14} className={isDark ? 'text-slate-500' : 'text-slate-400'} />
+                          {format(new Date(visit.createdAt), 'MMM dd, yyyy HH:mm')}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2 font-medium">
+                            {isMobile ? <Smartphone size={16} className="text-blue-500" /> : <Monitor size={16} className="text-indigo-500" />}
+                            <span>{visit.browser || 'Unknown Browser'}</span>
+                          </div>
+                          <span className={`text-xs mt-0.5 ml-6 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+                            {visit.os || 'Unknown OS'} {visit.deviceType ? `• ${visit.deviceType}` : ''}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <Globe size={16} className={isDark ? 'text-emerald-500/70' : 'text-emerald-500'} />
+                          <span>{visit.country || 'Unknown'}</span>
+                        </div>
+                      </td>
+                      <td className="p-4 font-mono text-xs">
+                        <span className={`px-2 py-1 rounded ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-600'}`}>
+                          {visit.ipAddress || 'Unknown'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
