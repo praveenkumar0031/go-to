@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import QRCodePackage from 'react-qr-code';
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { useTheme } from '../context/ThemeContext';
@@ -47,7 +47,7 @@ const Dashboard = () => {
     const sortedUrls = [...urls].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     
     sortedUrls.forEach(url => {
-      const date = format(new Date(url.createdAt), 'MMM dd');
+      const date = format(new Date(url.createdAt), 'dd MMM');
       counts[date] = (counts[date] || 0) + 1;
     });
     
@@ -159,7 +159,10 @@ const Dashboard = () => {
   }, [urls, searchTerm]);
 
   const totalClicks = urls.reduce((sum, url) => sum + (url.totalClicks || 0), 0);
-  const activeLinks = urls.length;
+  const activeLinks = urls.filter(url => {
+    if (!url.expiresAt) return true;
+    return new Date(url.expiresAt) > new Date();
+  }).length;
 
   const handleCopy = (shortCode, e) => {
     if (e) e.stopPropagation();
@@ -274,14 +277,8 @@ const Dashboard = () => {
           </div>
           <div className="h-[320px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={growthData}>
-                <defs>
-                  <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#f1f5f9'} />
+              <LineChart data={growthData}>
+                <CartesianGrid vertical={false} stroke={isDark ? '#222d3f' : '#e2e8f0'} strokeDasharray="0" />
                 <XAxis 
                   dataKey="date" 
                   stroke={isDark ? '#475569' : '#94a3b8'} 
@@ -296,30 +293,32 @@ const Dashboard = () => {
                   fontSize={11} 
                   fontWeight={600}
                   tickLine={false} 
-                  axisLine={false} 
+                  axisLine={false}
+                  allowDecimals={false}
+                  domain={[0, 'auto']}
                 />
                 <Tooltip 
-                  cursor={{ stroke: '#6366f1', strokeWidth: 2 }}
+                  cursor={{ stroke: '#6366f1', strokeWidth: 1 }}
                   contentStyle={{ 
                     backgroundColor: isDark ? '#0f172a' : '#fff', 
                     border: '1px solid ' + (isDark ? '#1e293b' : '#e2e8f0'), 
-                    borderRadius: '16px', 
-                    boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
-                    padding: '12px'
+                    borderRadius: '12px', 
+                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+                    padding: '8px 12px'
                   }}
-                  itemStyle={{ color: '#6366f1', fontWeight: 700 }}
-                  labelStyle={{ color: isDark ? '#94a3b8' : '#64748b', marginBottom: '4px', fontWeight: 600 }}
+                  itemStyle={{ color: '#6366f1', fontWeight: 700, fontSize: '12px' }}
+                  labelStyle={{ color: isDark ? '#94a3b8' : '#64748b', marginBottom: '2px', fontWeight: 600, fontSize: '11px' }}
                 />
-                <Area 
+                <Line 
                   type="monotone" 
                   dataKey="count" 
-                  stroke="#6366f1" 
-                  fillOpacity={1} 
-                  fill="url(#colorCount)" 
-                  strokeWidth={4} 
+                  stroke="#60a5fa" 
+                  strokeWidth={3}
+                  dot={{ r: 4, strokeWidth: 1, fill: isDark ? '#0f172a' : '#fff' }}
+                  activeDot={{ r: 6, strokeWidth: 0, fill: '#60a5fa' }}
                   animationDuration={1500}
                 />
-              </AreaChart>
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </div>

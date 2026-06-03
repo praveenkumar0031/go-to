@@ -69,10 +69,20 @@ const updateUrl = async (req, res) => {
     }
 
     // Update destination URL if provided
-    if (originalUrl) {
+    if (originalUrl && originalUrl !== url.originalUrl) {
       try {
         new URL(originalUrl);
+        const oldUrl = url.originalUrl;
         url.originalUrl = originalUrl;
+        
+        // Create an explicit activity log for this update
+        await Log.create({
+          urlId: url._id,
+          userId: userId,
+          shortCode: url.shortCode,
+          eventType: 'update',
+          description: `Destination updated from ${oldUrl} to ${originalUrl}`
+        });
       } catch (err) {
         return res.status(400).json({ error: 'Invalid URL format provided.' });
       }

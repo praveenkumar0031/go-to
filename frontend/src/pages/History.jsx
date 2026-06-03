@@ -1,17 +1,39 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   Clock, PlusCircle, MousePointerClick, Filter, Activity, 
-  Link as LinkIcon, Edit3, Monitor, Smartphone, Laptop, Tablet, Globe 
+  Link as LinkIcon, Edit3, Monitor, Smartphone, Laptop, Tablet, Globe,
+  ChevronDown, UploadCloud, Download, Plus, Search, X
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { getAllUrls, getAllLogs } from '../api/api';
+import BulkUploadModal from '../components/dashboard/BulkUploadModal';
 
 const History = () => {
+  const navigate = useNavigate();
   const { isDark } = useTheme();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const dropdownRef = useRef(null);
   
   const [filterType, setFilterType] = useState('all');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsFilterOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const { data: urlsData, isLoading: loadingUrls } = useQuery({
     queryKey: ['urls'],
@@ -25,12 +47,26 @@ const History = () => {
 
   const isLoading = loadingUrls || loadingLogs;
 
+  const handleDownloadTemplate = () => {
+    const csvContent = "originalUrl,expiresAt\nhttps://example.com,2026-12-31T23:59:59.000Z";
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'goto_bulk_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    toast.success('Template downloaded');
+  };
+
   const timelineEvents = useMemo(() => {
     if (isLoading) return [];
     
     const events = [];
     
-    // 1. Add URL creations & synthetic updates
+    // 1. Add URL creations
     if (urlsData?.urls) {
       urlsData.urls.forEach(url => {
         // Creation Event
@@ -42,41 +78,25 @@ const History = () => {
           label: 'Created link',
           details: url.originalUrl
         });
-
-        // Synthetic Update Event
-        const created = new Date(url.createdAt).getTime();
-        const updated = new Date(url.updatedAt).getTime();
-        
-        // If updatedAt is at least 1 second later than createdAt, consider it an update
-        if (updated - created > 1000) {
-          events.push({
-            id: `update-${url._id}`,
-            type: 'update',
-            shortCode: url.shortCode,
-            timestamp: new Date(url.updatedAt),
-            label: 'Link Updated',
-            details: `Destination changed to: ${url.originalUrl}`
-          });
-        }
       });
     }
 
-    // 2. Add Clicks with real visitor data
+    // 2. Add Mixed Logs (Clicks & Updates) from backend
     if (logsData?.logs) {
       logsData.logs.forEach((log, index) => {
         events.push({
-          id: `click-${index}`,
-          type: 'click',
+          id: `${log.eventType}-${index}`,
+          type: log.eventType || 'click',
           shortCode: log.shortCode,
           timestamp: new Date(log.visitedAt),
-          label: 'Link clicked',
-          // Map real analytics keys
+          label: log.eventType === 'update' ? 'Link Updated' : 'Link clicked',
+          details: log.description || `${log.browser || log.deviceType || 'Device'} on ${log.os || 'Unknown OS'}`,
+          // Map real analytics keys for clicks
           browser: log.browser,
           os: log.os,
           deviceType: log.deviceType,
           country: log.country,
-          ip: log.ipAddress,
-          details: `${log.browser || log.deviceType || 'Device'} on ${log.os || 'Unknown OS'}`
+          ip: log.ipAddress
         });
       });
     }
@@ -90,6 +110,13 @@ const History = () => {
     return timelineEvents.filter(e => e.type === filterType);
   }, [timelineEvents, filterType]);
 
+  const filterOptions = [
+    { value: 'all', label: 'All Activities', icon: Activity },
+    { value: 'create', label: 'Link Creations', icon: PlusCircle },
+    { value: 'click', label: 'Recent Clicks', icon: MousePointerClick },
+    { value: 'update', label: 'Link Updates', icon: Edit3 },
+  ];
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
@@ -100,25 +127,67 @@ const History = () => {
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-12">
+      {/* Header Section with Action Cluster */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div className="space-y-1">
-          <h1 className={`text-4xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Activity History</h1>
-          <p className={`text-lg font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Timeline of all link creations and clicks</p>
+          <h1 className={`text-4xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Recent Activity</h1>
+          <p className={`text-lg font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Timeline of all link creations, updates and clicks</p>
         </div>
         
-        <div className={`flex items-center gap-3 p-2 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-          <div className={`p-2 rounded-xl ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-400'}`}>
-            <Filter size={18} />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col items-end gap-1">
+            <button
+              onClick={() => setIsBulkModalOpen(true)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all duration-200 border ${isDark ? 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-800' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'}`}
+            >
+              <UploadCloud size={18} className="text-indigo-500" /> Bulk Upload
+            </button>
+            <button 
+              onClick={handleDownloadTemplate}
+              className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1.5 px-1"
+            >
+              <Download size={12} /> CSV Template
+            </button>
           </div>
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className={`bg-transparent outline-none text-sm font-bold pr-4 cursor-pointer ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
+
+          <button
+            onClick={() => navigate('/dashboard/create')}
+            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all duration-200 shadow-lg shadow-indigo-600/20 active:scale-95 h-[48px]"
           >
-            <option value="all">All Activities</option>
-            <option value="create">Link Creations</option>
-            <option value="click">Recent Clicks</option>
-          </select>
+            <Plus size={20} /> Create Link
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Row */}
+      <div className="flex justify-end">
+        <div className="relative" ref={dropdownRef}>
+          <button 
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className={`flex items-center gap-3 px-5 py-2.5 rounded-xl border font-bold text-sm transition-all duration-300 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-200 hover:bg-slate-800' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm'}`}
+          >
+            <Filter size={16} className="text-indigo-500" />
+            <span>{filterOptions.find(o => o.value === filterType)?.label}</span>
+            <ChevronDown size={14} className={`transition-transform duration-300 ${isFilterOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {isFilterOpen && (
+            <div className={`absolute right-0 mt-2 w-56 rounded-xl border z-50 shadow-2xl overflow-hidden p-1.5 transition-all duration-200 origin-top-right ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+              {filterOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => {
+                    setFilterType(opt.value);
+                    setIsFilterOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors ${filterType === opt.value ? 'bg-indigo-600 text-white' : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'}`}
+                >
+                  <opt.icon size={16} />
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -213,6 +282,17 @@ const History = () => {
           </div>
         )}
       </div>
+
+      {isBulkModalOpen && (
+        <BulkUploadModal 
+          isOpen={isBulkModalOpen} 
+          onClose={() => setIsBulkModalOpen(false)} 
+          onUploadSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['urls'] });
+            setIsBulkModalOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 };

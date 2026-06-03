@@ -163,9 +163,10 @@ const getUserLogs = async (req, res) => {
     const logs = await Log.find({
       urlId: { $in: urlIds }
     })
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 
-    // Attach shortCode to each log
+    // Attach shortCode to each log and include enriched data
     const formattedLogs = logs.map((log) => {
 
       const relatedUrl = userUrls.find(
@@ -175,18 +176,16 @@ const getUserLogs = async (req, res) => {
       );
 
       return {
-
-        shortCode:
-          relatedUrl?.shortCode || null,
-
-        ipAddress:
-          log.ipAddress,
-
-        userAgent:
-          log.userAgent,
-
-        visitedAt:
-          log.createdAt
+        shortCode: relatedUrl?.shortCode || null,
+        eventType: log.eventType || 'click',
+        description: log.description || null,
+        ipAddress: log.ipAddress,
+        userAgent: log.userAgent,
+        browser: log.browser,
+        os: log.os,
+        deviceType: log.deviceType,
+        country: log.country,
+        visitedAt: log.createdAt
       };
     });
 

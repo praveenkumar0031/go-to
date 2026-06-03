@@ -9,6 +9,7 @@ const DashboardLayout = () => {
   const { user, loading } = useAuth();
   const { isDark } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   if (loading) {
     return (
@@ -23,16 +24,21 @@ const DashboardLayout = () => {
   }
 
   return (
-    <div className={`min-h-screen flex transition-colors duration-300 ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
+    <div className={`min-h-screen flex transition-all duration-300 ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
       {/* Sidebar Component */}
-      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <Sidebar 
+        isOpen={sidebarOpen} 
+        setIsOpen={setSidebarOpen} 
+        isCollapsed={isCollapsed} 
+        setIsCollapsed={setIsCollapsed} 
+      />
 
-      <div className="flex-1 flex flex-col min-w-0 h-screen">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         {/* Navbar Component */}
         <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} user={user} />
 
         {/* Main Content Area */}
-        <main className={`flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto custom-scrollbar ${isDark ? 'text-slate-50' : 'text-slate-900'}`}>
+        <main className={`flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto custom-scrollbar transition-all duration-300 ${isDark ? 'text-slate-50' : 'text-slate-900'}`}>
           <div className="max-w-7xl mx-auto w-full">
             <Outlet />
           </div>
