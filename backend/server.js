@@ -8,7 +8,7 @@ const urlrouter = require("./src/routers/urlRouter");
 const logrouter=require("./src/routers/logRouter")
 dotenv.config();
 connectDb();
-const frontend=process.env.FRONTEND_URL||"http://localhost:5173";
+const frontend=process.env.FRONTEND_URL//||"http://localhost:5173";
 const app = express();
 app.use(cors({
   origin: frontend,
