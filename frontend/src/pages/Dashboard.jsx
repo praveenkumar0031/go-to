@@ -1,18 +1,29 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, BarChart2, Trash2, Copy, Check, MousePointerClick, Link as LinkIcon, Activity, X, Edit3 } from 'lucide-react';
+import { 
+  Plus, Search, BarChart2, Trash2, Copy, Check, MousePointerClick, 
+  Link as LinkIcon, Activity, X, Edit3, UploadCloud, Download, 
+  FileJson, FileSpreadsheet, User
+} from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import QRCodePackage from 'react-qr-code';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from 'recharts';
 import { useTheme } from '../context/ThemeContext';
-import { getAllUrls, deleteShortUrl, updateShortUrl } from '../api/api';
+import { useAuth } from '../context/AuthContext';
+import { getAllUrls, deleteShortUrl, updateShortUrl, exportFullUrlData } from '../api/api';
+import BulkUploadModal from '../components/dashboard/BulkUploadModal';
 
 const QRCode = QRCodePackage.default || QRCodePackage;
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,17 +31,95 @@ const Dashboard = () => {
   const [selectedUrl, setSelectedUrl] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editAlias, setEditAlias] = useState('');
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
   const { data: urlsData, isLoading } = useQuery({
     queryKey: ['urls'],
     queryFn: getAllUrls,
   });
 
-  useEffect(() => {
-    if (urlsData) {
-      console.log("API Response Data:", urlsData);
+  const urls = urlsData?.urls || [];
+
+  // --- Module 2: Data Processing for Charts ---
+  const growthData = useMemo(() => {
+    const counts = {};
+    urls.forEach(url => {
+      const date = format(new Date(url.createdAt), 'MMM dd');
+      counts[date] = (counts[date] || 0) + 1;
+    });
+    return Object.entries(counts).map(([date, count]) => ({ date, count }));
+  }, [urls]);
+
+  const healthData = useMemo(() => {
+    let live = 0;
+    let expired = 0;
+    const now = new Date();
+
+    urls.forEach(url => {
+      if (!url.expiresAt || new Date(url.expiresAt) > now) {
+        live++;
+      } else {
+        expired++;
+      }
+    });
+
+    return [
+      { name: 'Live', value: live, color: '#10b981' }, // emerald-500
+      { name: 'Expired', value: expired, color: '#f43f5e' } // rose-500
+    ];
+  }, [urls]);
+
+  // --- Module 4: CSV Template Downloader ---
+  const handleDownloadTemplate = () => {
+    const csvContent = "originalUrl,expiresAt\nhttps://example.com,2026-12-31T23:59:59.000Z";
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'goto_bulk_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    toast.success('Template downloaded');
+  };
+
+  // --- Module 5: Data Exporter (Deep Fetch) ---
+  const handleExportJSON = async (data) => {
+    try {
+      const toastId = toast.loading('Preparing full data package...');
+      
+      // 1. Fetch full data from backend (Meta + Tracking Logs)
+      const fullData = await exportFullUrlData(data.shortCode);
+
+      // 2. Trigger Download
+      const blob = new Blob([JSON.stringify(fullData, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `goto_export_${data.shortCode}.json`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Full data package exported!', { id: toastId });
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Failed to export full data package.');
     }
-  }, [urlsData]);
+  };
+
+  const handleExportCSV = (data) => {
+    const headers = "_id,originalUrl,shortCode,totalClicks,createdAt\n";
+    const row = `${data._id},${data.originalUrl},${data.shortCode},${data.totalClicks || 0},${data.createdAt}\n`;
+    const blob = new Blob([headers + row], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${data.shortCode}_analytics.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast.success('CSV exported');
+  };
 
   const deleteMutation = useMutation({
     mutationFn: deleteShortUrl,
@@ -49,7 +138,6 @@ const Dashboard = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['urls'] });
       toast.success('URL alias updated');
-      // Update selected URL to show new alias in modal without closing
       setSelectedUrl(prev => ({ ...prev, shortCode: data.shortCode || editAlias }));
       setIsEditMode(false);
     },
@@ -57,8 +145,6 @@ const Dashboard = () => {
       toast.error(error.response?.data?.error || 'Failed to update alias');
     }
   });
-
-  const urls = urlsData?.urls || [];
 
   const filteredUrls = useMemo(() => {
     const searchLower = (searchTerm || '').toLowerCase();
@@ -117,17 +203,50 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header with Module 1: Profile Widget */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>My Links</h1>
           <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Manage and track your shortened URLs</p>
         </div>
-        <button
-          onClick={() => navigate('/dashboard/create')}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
-        >
-          <Plus size={18} /> Create Link
-        </button>
+        
+        <div className="flex items-center flex-wrap gap-4">
+          {/* Module 1: User Profile Widget */}
+          <div className="flex items-center gap-3 pr-4 border-r border-slate-200 dark:border-slate-800">
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm ${isDark ? 'bg-slate-800 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+              {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
+            </div>
+            <div className="hidden md:block">
+              <p className={`text-xs font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Welcome back,</p>
+              <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{user?.name || 'User'}</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col items-end gap-1">
+              <button
+                onClick={() => setIsBulkModalOpen(true)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700' : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200'}`}
+              >
+                <UploadCloud size={18} /> Bulk Upload
+              </button>
+              {/* Module 4: Template Link */}
+              <button 
+                onClick={handleDownloadTemplate}
+                className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+              >
+                <Download size={10} /> Download Template
+              </button>
+            </div>
+
+            <button
+              onClick={() => navigate('/dashboard/create')}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors h-[42px]"
+            >
+              <Plus size={18} /> Create Link
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -149,6 +268,62 @@ const Dashboard = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Module 2: Global Analytics Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* URL Growth Timeline */}
+        <div className={`p-6 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <h3 className={`text-lg font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>Link Creation Growth</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={growthData}>
+                <defs>
+                  <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#e2e8f0'} />
+                <XAxis dataKey="date" stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: isDark ? '#0f172a' : '#fff', border: 'none', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                  itemStyle={{ color: '#6366f1' }}
+                />
+                <Area type="monotone" dataKey="count" stroke="#6366f1" fillOpacity={1} fill="url(#colorCount)" strokeWidth={3} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Link Status Health */}
+        <div className={`p-6 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <h3 className={`text-lg font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>Link Status Health</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={healthData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={70}
+                  outerRadius={90}
+                  paddingAngle={8}
+                  dataKey="value"
+                >
+                  {healthData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ backgroundColor: isDark ? '#0f172a' : '#fff', border: 'none', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                />
+                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
 
       {/* Search & Filter Bar */}
@@ -189,46 +364,57 @@ const Dashboard = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredUrls.map((url) => (
-            <div 
-              key={url.shortCode}
-              onClick={() => openModal(url)}
-              className={`p-5 rounded-xl border cursor-pointer hover:-translate-y-1 transition-all duration-200 shadow-sm hover:shadow-md ${isDark ? 'bg-slate-900 border-slate-800 hover:border-indigo-500/50' : 'bg-white border-slate-200 hover:border-indigo-500/30'}`}
-            >
-              <div className="flex justify-between items-start mb-3">
-                <div className={`px-2 py-1 rounded text-xs font-mono font-semibold ${isDark ? 'bg-indigo-500/20 text-indigo-400' : 'bg-indigo-50 text-indigo-700'}`}>
-                  /{url.shortCode}
+          {filteredUrls.map((url) => {
+            // Module 3: Health Logic
+            const isLive = !url.expiresAt || new Date(url.expiresAt) > new Date();
+            
+            return (
+              <div 
+                key={url.shortCode}
+                onClick={() => openModal(url)}
+                className={`p-5 rounded-xl border cursor-pointer hover:-translate-y-1 transition-all duration-200 shadow-sm hover:shadow-md ${isDark ? 'bg-slate-900 border-slate-800 hover:border-indigo-500/50' : 'bg-white border-slate-200 hover:border-indigo-500/30'}`}
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className={`px-2 py-1 rounded text-xs font-mono font-semibold ${isDark ? 'bg-indigo-500/20 text-indigo-400' : 'bg-indigo-50 text-indigo-700'}`}>
+                      /{url.shortCode}
+                    </div>
+                    {/* Module 3: Health Badge */}
+                    <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${isLive ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                      <span>●</span> {isLive ? 'Live' : 'Expired'}
+                    </div>
+                  </div>
+                  <button 
+                    onClick={(e) => handleCopy(url.shortCode, e)}
+                    className={`p-1.5 rounded-md transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
+                  >
+                    {copiedId === url.shortCode ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                  </button>
                 </div>
-                <button 
-                  onClick={(e) => handleCopy(url.shortCode, e)}
-                  className={`p-1.5 rounded-md transition-colors ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
-                >
-                  {copiedId === url.shortCode ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
-                </button>
+                
+                <div className="mb-4">
+                  <p className={`text-sm truncate mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`} title={url.originalUrl}>
+                    {url.originalUrl}
+                  </p>
+                  <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                    Created {url.createdAt ? format(new Date(url.createdAt), 'MMM d, yyyy') : 'N/A'}
+                  </p>
+                </div>
+                
+                <div className={`flex items-center gap-2 text-sm font-medium pt-3 border-t ${isDark ? 'border-slate-800 text-slate-300' : 'border-slate-100 text-slate-700'}`}>
+                  <MousePointerClick size={16} className={isDark ? 'text-slate-500' : 'text-slate-400'} />
+                  {url.totalClicks || 0} Clicks
+                </div>
               </div>
-              
-              <div className="mb-4">
-                <p className={`text-sm truncate mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`} title={url.originalUrl}>
-                  {url.originalUrl}
-                </p>
-                <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  Created {url.createdAt ? format(new Date(url.createdAt), 'MMM d, yyyy') : 'N/A'}
-                </p>
-              </div>
-              
-              <div className={`flex items-center gap-2 text-sm font-medium pt-3 border-t ${isDark ? 'border-slate-800 text-slate-300' : 'border-slate-100 text-slate-700'}`}>
-                <MousePointerClick size={16} className={isDark ? 'text-slate-500' : 'text-slate-400'} />
-                {url.totalClicks || 0} Clicks
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Modal / Slide-over Panel */}
       {selectedUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className={`w-full max-w-md rounded-2xl shadow-xl overflow-hidden ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}>
+          <div className={`w-full max-w-md max-h-[90vh] flex flex-col rounded-2xl shadow-xl overflow-hidden ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}>
             <div className={`p-4 border-b flex justify-between items-center ${isDark ? 'border-slate-800 bg-slate-800/50' : 'border-slate-100 bg-slate-50'}`}>
               <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Link Details</h3>
               <button onClick={closeModal} className={`p-1 rounded-md transition-colors ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-200 text-slate-500'}`}>
@@ -236,7 +422,7 @@ const Dashboard = () => {
               </button>
             </div>
             
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto">
               {/* QR Code Section */}
               <div className="flex flex-col items-center mb-6">
                 <div className="p-3 bg-white rounded-xl shadow-sm border border-slate-100 mb-3">
@@ -276,10 +462,16 @@ const Dashboard = () => {
               </div>
 
               {/* Data Section */}
-              <div className="space-y-4 mb-8">
+              <div className="space-y-4 mb-6">
                 <div>
                   <p className={`text-xs font-medium uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Destination</p>
-                  <a href={selectedUrl.originalUrl} target="_blank" rel="noreferrer" className={`text-sm break-all hover:underline ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  <a 
+                    href={selectedUrl.originalUrl} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    title={selectedUrl.originalUrl}
+                    className={`text-sm line-clamp-2 hover:underline ${isDark ? 'text-slate-300' : 'text-slate-700'}`}
+                  >
                     {selectedUrl.originalUrl}
                   </a>
                 </div>
@@ -294,6 +486,25 @@ const Dashboard = () => {
                       {selectedUrl.createdAt ? format(new Date(selectedUrl.createdAt), 'MMM dd, yyyy') : 'N/A'}
                     </p>
                   </div>
+                </div>
+              </div>
+
+              {/* Module 5: Targeted Data Exporter */}
+              <div className={`mb-6 p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Export Link Data</p>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => handleExportJSON(selectedUrl)}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-indigo-400' : 'bg-white hover:bg-slate-100 text-indigo-600 border border-slate-200'}`}
+                  >
+                    <FileJson size={14} /> JSON
+                  </button>
+                  <button 
+                    onClick={() => handleExportCSV(selectedUrl)}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-emerald-400' : 'bg-white hover:bg-slate-100 text-emerald-600 border border-slate-200'}`}
+                  >
+                    <FileSpreadsheet size={14} /> CSV
+                  </button>
                 </div>
               </div>
 
@@ -324,6 +535,17 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {isBulkModalOpen && (
+        <BulkUploadModal 
+          isOpen={isBulkModalOpen} 
+          onClose={() => setIsBulkModalOpen(false)} 
+          onUploadSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['urls'] });
+            setIsBulkModalOpen(false);
+          }}
+        />
       )}
     </div>
   );

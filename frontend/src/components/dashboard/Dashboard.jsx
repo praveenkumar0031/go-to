@@ -1,8 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 import DashboardLayout from '../layouts/DashboardLayout';
 import UrlInputForm from './UrlInputForm';
@@ -22,8 +35,8 @@ import {
  * Main dashboard view with:
  * - URL shortener input form
  * - Analytics section with metrics
+ * - Data visualization charts
  * - URL management table
- * - Responsive design
  */
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -58,6 +71,58 @@ const Dashboard = () => {
     }
   };
 
+  // 1. Data Processing: Health Status Data
+  const healthData = useMemo(() => {
+    const now = new Date();
+    const stats = {
+      Active: 0,
+      'Expiring Soon': 0,
+      Expired: 0,
+    };
+
+    urls.forEach((url) => {
+      if (!url.expiresAt) {
+        stats.Active++;
+      } else {
+        const expiryDate = new Date(url.expiresAt);
+        if (expiryDate < now) {
+          stats.Expired++;
+        } else {
+          stats['Expiring Soon']++;
+        }
+      }
+    });
+
+    return Object.entries(stats).map(([name, value]) => ({ name, value }));
+  }, [urls]);
+
+  // 1. Data Processing: Creation Timeline Data
+  const timelineData = useMemo(() => {
+    const groups = {};
+    
+    // Sort urls by date first to ensure timeline is chronological
+    const sortedUrls = [...urls].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+    sortedUrls.forEach((url) => {
+      const date = new Date(url.createdAt).toLocaleDateString('en-US', {
+        month: 'short',
+        day: '2-digit',
+      });
+      groups[date] = (groups[date] || 0) + 1;
+    });
+
+    return Object.entries(groups).map(([date, count]) => ({
+      date,
+      links: count,
+    }));
+  }, [urls]);
+
+  const HEALTH_COLORS = {
+    Active: '#4f46e5',        // Indigo-600
+    'Expiring Soon': '#3b82f6', // Blue-500
+    Expired: '#ef4444',       // Red-500
+  };
+
   const handleShortenUrl = async (data) => {
     try {
       setSubmitting(true);
@@ -88,7 +153,6 @@ const Dashboard = () => {
   };
 
   const handleEditUrl = (url) => {
-    // TODO: Implement edit modal
     toast.info('Edit functionality coming soon');
   };
 
@@ -140,6 +204,95 @@ const Dashboard = () => {
           lastVisited={lastVisited}
           urls={urls}
         />
+
+        {/* 2. UI Layout: Health Checks & Data Logs Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Chart 1: URL Health */}
+          <div className={`p-6 rounded-xl border transition-colors duration-300 ${
+            isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}>
+            <h3 className={`text-lg font-semibold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              URL Health Status
+            </h3>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={healthData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {healthData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={HEALTH_COLORS[entry.name]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: isDark ? '#1e293b' : '#fff',
+                      borderColor: isDark ? '#334155' : '#e2e8f0',
+                      color: isDark ? '#fff' : '#000'
+                    }}
+                  />
+                  <Legend verticalAlign="bottom" height={36}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Chart 2: Growth Timeline */}
+          <div className={`p-6 rounded-xl border transition-colors duration-300 ${
+            isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}>
+            <h3 className={`text-lg font-semibold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              Link Creation Growth
+            </h3>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={timelineData}>
+                  <defs>
+                    <linearGradient id="colorLinks" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#334155' : '#e2e8f0'} />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke={isDark ? '#94a3b8' : '#64748b'}
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke={isDark ? '#94a3b8' : '#64748b'}
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: isDark ? '#1e293b' : '#fff',
+                      borderColor: isDark ? '#334155' : '#e2e8f0',
+                      color: isDark ? '#fff' : '#000'
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="links" 
+                    stroke="#4f46e5" 
+                    fillOpacity={1} 
+                    fill="url(#colorLinks)" 
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
 
         {/* URL Management Table */}
         <UrlTable

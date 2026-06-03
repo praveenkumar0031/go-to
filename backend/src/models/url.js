@@ -16,6 +16,10 @@ const urlSchema = new mongoose.Schema({
     ref: 'User',
     required: true, // Ties the URL to the authenticated user
   },
+  expiresAt: {
+    type: Date,
+    default: null, // Optional expiration date
+  },
   createdAt: {
     type: Date,
     default: Date.now,

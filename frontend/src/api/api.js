@@ -69,6 +69,17 @@ export const createShortUrl = async (data) => {
     return response.data;
 };
 
+// BULK CREATE URLS
+export const bulkCreateUrls = async (data) => {
+    const response = await axios.post(
+        `${api}/urls/bulk`,
+        data,
+        getAuthHeader()
+    );
+
+    return response.data;
+};
+
 
 // GET ALL URLS
 export const getAllUrls = async () => {
@@ -111,6 +122,15 @@ export const deleteShortUrl = async (shortCode) => {
         getAuthHeader()
     );
 
+    return response.data;
+};
+
+// EXPORT FULL URL DATA (Meta + Tracking Logs)
+export const exportFullUrlData = async (shortCode) => {
+    const response = await axios.get(
+        `${api}/urls/${shortCode}/export-full`,
+        getAuthHeader()
+    );
     return response.data;
 };
 

@@ -16,6 +16,19 @@ const mongoose=require("mongoose");
       return res.status(404).json({ error: 'URL not found' });
     }
 
+    // Check if the link has expired
+    if (urlData.expiresAt && new Date() > urlData.expiresAt) {
+      return res.status(410).send(`
+        <html>
+          <head><title>Link Expired</title></head>
+          <body style="font-family: sans-serif; text-align: center; padding-top: 50px;">
+            <h1>410 Gone</h1>
+            <p>This link has expired and is no longer available.</p>
+          </body>
+        </html>
+      `);
+    }
+
     // 1. Redirect immediately (Zero latency for the user)
     res.redirect(urlData.originalUrl);
 

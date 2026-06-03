@@ -1,13 +1,13 @@
 const { nanoid } = require('nanoid');
 const Url = require('../models/url.js');
 const Analytics = require('../models/analytics.js'); // Import this to clean up data on delete
-
+const Log = require('../models/log.js');
 
 // 1. CREATE (Updated with Custom Alias support)
 const createShortUrl = async (req, res) => {
   try {
-    // Extract customAlias from the request body alongside the original URL
-    const { originalUrl, customAlias } = req.body;
+    // Extract customAlias and expiresAt from the request body alongside the original URL
+    const { originalUrl, customAlias, expiresAt } = req.body;
     const userId = req.user.id;
 
     // Mandatory Validation: Check if it's a valid URL
@@ -39,7 +39,8 @@ const createShortUrl = async (req, res) => {
     const newUrl = new Url({
       originalUrl,
       shortCode,
-      userId
+      userId,
+      ...(expiresAt ? { expiresAt } : {})
     });
 
     await newUrl.save();
@@ -169,10 +170,104 @@ const getUserUrls = async (req, res) => {
 };
 
 
+// 4. BULK CREATE
+const bulkCreateUrls = async (req, res) => {
+  try {
+    const { urls } = req.body;
+    const userId = req.user.id;
+
+    // Strict validation: Expecting { urls: [...] }
+    if (!urls || !Array.isArray(urls) || urls.length === 0) {
+      return res.status(400).json({ error: 'Payload must contain a non-empty array named "urls".' });
+    }
+
+    // Map over the array and explicitly attach userId to EVERY object
+    const validUrlsToInsert = urls
+      .filter(item => {
+        try {
+          new URL(item.originalUrl);
+          return true;
+        } catch (err) {
+          return false; // Skip invalid URLs
+        }
+      })
+      .map(item => {
+        return {
+          originalUrl: item.originalUrl,
+          shortCode: nanoid(8),
+          userId: userId // Explicitly attaching the logged-in user's ID
+        };
+      });
+
+    if (validUrlsToInsert.length === 0) {
+      return res.status(400).json({ error: 'No valid URLs found in the payload.' });
+    }
+
+    const insertedUrls = await Url.insertMany(validUrlsToInsert);
+    res.status(201).json(insertedUrls);
+
+  } catch (error) {
+    console.error('Error in bulkCreateUrls:', error);
+    res.status(500).json({ error: 'Server error while performing bulk creation.' });
+  }
+};
+
+// 5. DEEP EXPORT (Aggregate URL details and all visit logs)
+const exportFullData = async (req, res) => {
+  try {
+    const { shortCode } = req.params;
+    const userId = req.user.id;
+
+    // 1. Find the URL matching the shortCode and userId
+    const url = await Url.findOne({ shortCode, userId }).lean();
+    if (!url) {
+      return res.status(404).json({ error: 'URL not found or unauthorized.' });
+    }
+
+    // 2. Fetch the total clicks from Analytics
+    const analytics = await Analytics.findOne({ urlId: url._id }).lean();
+    const totalClicks = analytics ? analytics.totalClicks : 0;
+
+    // 3. Query all logs for this URL
+    const trackingLogs = await Log.find({ urlId: url._id })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // 4. Assemble the comprehensive data package
+    const dataPackage = {
+      exportMeta: {
+        system: "Goto URL Shortener",
+        exportedAt: new Date().toISOString(),
+        version: "1.0"
+      },
+      urlDetails: {
+        ...url,
+        totalClicks
+      },
+      trackingLogs: trackingLogs.map(log => ({
+        timestamp: log.createdAt,
+        ipAddress: log.ipAddress,
+        browser: log.browser,
+        os: log.os,
+        deviceType: log.deviceType,
+        country: log.country,
+        city: log.city || 'N/A'
+      }))
+    };
+
+    res.status(200).json(dataPackage);
+
+  } catch (error) {
+    console.error('Error in exportFullData:', error);
+    res.status(500).json({ error: 'Server error while generating data export.' });
+  }
+};
+
 module.exports = {
   createShortUrl,
   updateUrl,
   deleteUrl,
   getUserUrls,
-  
+  bulkCreateUrls,
+  exportFullData,
 };

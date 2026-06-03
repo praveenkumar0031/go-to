@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link2, Shield, Calendar, QrCode, Copy, CheckCircle, XCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import {
+  Link2,
+  Shield,
+  Copy,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react';
 import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
+
 import { useTheme } from '../context/ThemeContext';
 import { createShortUrl } from '../api/api';
 
@@ -12,22 +18,24 @@ const CreateUrl = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const queryClient = useQueryClient();
-  
+
   const [url, setUrl] = useState('');
-  const [isValidUrl, setIsValidUrl] = useState(null);
   const [customAlias, setCustomAlias] = useState('');
-  
-  // Success state
+  const [expiresAt, setExpiresAt] = useState('');
+
+  const [isValidUrl, setIsValidUrl] = useState(null);
+
   const [createdUrl, setCreatedUrl] = useState(null);
   const [qrCodeData, setQrCodeData] = useState('');
   const [copied, setCopied] = useState(false);
 
-  // Simple URL validation
+  // URL Validation
   useEffect(() => {
-    if (!url) {
+    if (!url.trim()) {
       setIsValidUrl(null);
       return;
     }
+
     try {
       new URL(url);
       setIsValidUrl(true);
@@ -36,122 +44,222 @@ const CreateUrl = () => {
     }
   }, [url]);
 
+  const getShortUrl = (code) => {
+    const base =
+      import.meta.env.VITE_REDIRECT_API ||
+      'http://localhost:8000/goto';
+
+    return `${base}/${code}`;
+  };
+
   const createMutation = useMutation({
     mutationFn: createShortUrl,
+
     onSuccess: async (data) => {
+      if (!data?.shortCode) {
+        toast.error('Invalid response from server');
+        return;
+      }
+
       setCreatedUrl(data);
-      queryClient.invalidateQueries({ queryKey: ['urls'] });
-      toast.success('Short URL created!');
-      
-      // Generate QR Code
+
+      queryClient.invalidateQueries({
+        queryKey: ['urls'],
+      });
+
+      toast.success('Short URL created successfully');
+
       try {
-        const fullUrl = `${import.meta.env.VITE_REDIRECT_API || 'http://localhost:8000/goto'}/${data.shortCode}`;
-        const qr = await QRCode.toDataURL(fullUrl, {
+        const shortUrl = getShortUrl(data.shortCode);
+
+        const qr = await QRCode.toDataURL(shortUrl, {
           width: 250,
           margin: 2,
-          color: {
-            dark: '#000000',
-            light: '#ffffff',
-          },
         });
+
         setQrCodeData(qr);
       } catch (err) {
-        console.error('QR Gen error', err);
+        console.error(err);
       }
     },
+
     onError: (error) => {
-      toast.error(error.response?.data?.error || 'Failed to create URL');
-    }
+      toast.error(
+        error?.response?.data?.error ||
+          'Failed to create short URL'
+      );
+    },
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!isValidUrl) return toast.error('Please enter a valid URL');
-    
-    createMutation.mutate({
+
+    if (!isValidUrl) {
+      toast.error('Please enter a valid URL');
+      return;
+    }
+
+    const payload = {
       originalUrl: url,
-      customAlias: customAlias || undefined,
-    });
+    };
+    if (customAlias) payload.customAlias = customAlias;
+    if (expiresAt) payload.expiresAt = expiresAt;
+
+    createMutation.mutate(payload);
   };
 
-  const handleCopy = () => {
-    if (!createdUrl) return;
-    const fullUrl = `${import.meta.env.VITE_REDIRECT_API || 'http://localhost:8000/goto'}/${createdUrl.shortCode}`;
-    navigator.clipboard.writeText(fullUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    if (!createdUrl?.shortCode) return;
+
+    try {
+      await navigator.clipboard.writeText(
+        getShortUrl(createdUrl.shortCode)
+      );
+
+      setCopied(true);
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch {
+      toast.error('Failed to copy');
+    }
   };
 
+  // SUCCESS SCREEN
   if (createdUrl) {
     return (
-      <div className="max-w-2xl mx-auto mt-8">
-        <div className={`p-8 rounded-2xl border text-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+      <div className="max-w-3xl mx-auto mt-8">
+        <div
+          className={`rounded-2xl border p-8 text-center shadow-sm ${
+            isDark
+              ? 'bg-slate-900 border-slate-800'
+              : 'bg-white border-slate-200'
+          }`}
+        >
+          <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-6">
             <CheckCircle size={32} />
           </div>
-          
-          <h2 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            URL Shortened Successfully!
+
+          <h2
+            className={`text-3xl font-bold mb-2 ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}
+          >
+            URL Created Successfully
           </h2>
-          
-          <div className={`mt-8 p-6 rounded-xl border flex flex-col md:flex-row items-center justify-between gap-6 ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-            <div className="text-left flex-1 break-all">
-              <p className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Your Short URL</p>
-              <a 
-                href={`${import.meta.env.VITE_REDIRECT_API || 'http://localhost:8000/goto'}/${createdUrl.shortCode}`} 
-                target="_blank" 
-                rel="noreferrer"
-                className="text-xl font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+
+          <p
+            className={`mb-8 ${
+              isDark ? 'text-slate-400' : 'text-slate-500'
+            }`}
+          >
+            Your shortened link is ready to use.
+          </p>
+
+          <div
+            className={`rounded-xl border p-6 flex flex-col md:flex-row gap-6 items-center justify-between ${
+              isDark
+                ? 'bg-slate-800/50 border-slate-700'
+                : 'bg-slate-50 border-slate-200'
+            }`}
+          >
+            <div className="flex-1 text-left break-all">
+              <p
+                className={`text-sm mb-2 ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}
               >
-                {`${import.meta.env.VITE_REDIRECT_API || 'http://localhost:8000/goto'}/${createdUrl.shortCode}`}
+                Short URL
+              </p>
+
+              <a
+                href={getShortUrl(createdUrl.shortCode)}
+                target="_blank"
+                rel="noreferrer"
+                className="text-indigo-600 dark:text-indigo-400 text-xl font-bold hover:underline"
+              >
+                {getShortUrl(createdUrl.shortCode)}
               </a>
-              <p className={`text-xs mt-2 truncate ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+
+              <p
+                className={`text-xs mt-3 truncate ${
+                  isDark ? 'text-slate-500' : 'text-slate-400'
+                }`}
+              >
                 Redirects to: {createdUrl.originalUrl}
               </p>
             </div>
-            
-            <button 
+
+            <button
               onClick={handleCopy}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${copied ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+              className={`px-5 py-3 rounded-lg text-white font-medium flex items-center gap-2 transition-colors ${
+                copied
+                  ? 'bg-green-600 hover:bg-green-700'
+                  : 'bg-indigo-600 hover:bg-indigo-700'
+              }`}
             >
-              {copied ? <CheckCircle size={18} /> : <Copy size={18} />}
-              {copied ? 'Copied!' : 'Copy Link'}
+              {copied ? (
+                <CheckCircle size={18} />
+              ) : (
+                <Copy size={18} />
+              )}
+
+              {copied ? 'Copied!' : 'Copy'}
             </button>
           </div>
 
           {qrCodeData && (
-            <div className="mt-8 flex flex-col items-center">
-              <p className={`text-sm mb-4 font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Scan QR Code</p>
-              <div className="p-4 bg-white rounded-xl shadow-sm border border-slate-200 inline-block">
-                <img src={qrCodeData} alt="QR Code" className="w-48 h-48" />
-              </div>
-              <a 
-                href={qrCodeData} 
-                download={`qrcode-${createdUrl.shortCode}.png`}
-                className={`mt-4 text-sm font-medium ${isDark ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'}`}
+            <div className="mt-10 flex flex-col items-center">
+              <p
+                className={`mb-4 text-sm font-medium ${
+                  isDark ? 'text-slate-300' : 'text-slate-700'
+                }`}
               >
-                Download PNG
+                QR Code
+              </p>
+
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <img
+                  src={qrCodeData}
+                  alt="QR Code"
+                  className="w-52 h-52"
+                />
+              </div>
+
+              <a
+                href={qrCodeData}
+                download={`qr-${createdUrl.shortCode}.png`}
+                className="mt-4 text-indigo-600 dark:text-indigo-400 font-medium hover:underline"
+              >
+                Download QR Code
               </a>
             </div>
           )}
 
           <div className="mt-10 flex items-center justify-center gap-4">
-            <button 
+            <button
               onClick={() => navigate('/dashboard')}
-              className={`px-6 py-2 rounded-lg font-medium border transition-colors ${isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+              className={`px-6 py-2.5 rounded-lg border font-medium transition-colors ${
+                isDark
+                  ? 'border-slate-700 text-slate-300 hover:bg-slate-800'
+                  : 'border-slate-300 text-slate-700 hover:bg-slate-100'
+              }`}
             >
-              Back to Dashboard
+              Dashboard
             </button>
-            <button 
+
+            <button
               onClick={() => {
                 setCreatedUrl(null);
                 setUrl('');
                 setCustomAlias('');
+                setExpiresAt('');
                 setQrCodeData('');
               }}
-              className="px-6 py-2 rounded-lg font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+              className="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
             >
-              Shorten Another
+              Create Another
             </button>
           </div>
         </div>
@@ -159,86 +267,181 @@ const CreateUrl = () => {
     );
   }
 
+  // FORM
   return (
-    <div className="max-w-2xl mx-auto mt-4">
+    <div className="max-w-2xl mx-auto mt-6">
       <div className="mb-6">
-        <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Create Short Link</h1>
-        <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Enter your long URL to generate a trackable short link.</p>
+        <h1
+          className={`text-3xl font-bold ${
+            isDark ? 'text-white' : 'text-slate-900'
+          }`}
+        >
+          Create Short URL
+        </h1>
+
+        <p
+          className={`mt-2 ${
+            isDark ? 'text-slate-400' : 'text-slate-500'
+          }`}
+        >
+          Transform long links into clean and trackable URLs.
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className={`p-6 rounded-xl border shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+      <form
+        onSubmit={handleSubmit}
+        className={`rounded-2xl border p-6 shadow-sm ${
+          isDark
+            ? 'bg-slate-900 border-slate-800'
+            : 'bg-white border-slate-200'
+        }`}
+      >
         <div className="space-y-6">
-          {/* Long URL */}
+          {/* URL */}
           <div>
-            <label htmlFor="originalUrl" className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
-              <Link2 size={16} /> Destination URL
+            <label
+              className={`text-sm font-semibold mb-2 flex items-center gap-2 ${
+                isDark ? 'text-slate-200' : 'text-slate-700'
+              }`}
+            >
+              <Link2 size={16} />
+              Destination URL
             </label>
+
             <div className="relative">
               <input
-                id="originalUrl"
-                name="originalUrl"
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://example.com/very/long/path"
-                className={`w-full px-4 py-3 rounded-lg border outline-none transition-colors pr-10 ${
-                  isDark 
-                    ? 'bg-slate-800 border-slate-700 text-white focus:border-indigo-500' 
-                    : 'bg-white border-slate-300 text-slate-900 focus:border-indigo-500'
-                } ${isValidUrl === false ? 'border-red-500 focus:border-red-500' : ''}`}
+                placeholder="https://example.com"
                 required
+                className={`w-full px-4 py-3 rounded-lg border pr-10 outline-none transition-colors ${
+                  isDark
+                    ? 'bg-slate-800 border-slate-700 text-white focus:border-indigo-500'
+                    : 'bg-white border-slate-300 text-slate-900 focus:border-indigo-500'
+                } ${
+                  isValidUrl === false
+                    ? 'border-red-500 focus:border-red-500'
+                    : ''
+                }`}
               />
+
               {url && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  {isValidUrl ? <CheckCircle size={18} className="text-green-500" /> : <XCircle size={18} className="text-red-500" />}
+                  {isValidUrl ? (
+                    <CheckCircle
+                      size={18}
+                      className="text-green-500"
+                    />
+                  ) : (
+                    <XCircle
+                      size={18}
+                      className="text-red-500"
+                    />
+                  )}
                 </div>
               )}
             </div>
+
             {isValidUrl === false && (
-              <p className="text-red-500 text-xs mt-1">Please enter a valid URL including http:// or https://</p>
+              <p className="text-red-500 text-xs mt-2">
+                Please enter a valid URL including
+                https://
+              </p>
             )}
           </div>
 
-          {/* Custom Alias */}
+          {/* Alias */}
           <div>
-            <label htmlFor="customAlias" className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
-              <Shield size={16} /> Custom Alias (Optional)
+            <label
+              className={`text-sm font-semibold mb-2 flex items-center gap-2 ${
+                isDark ? 'text-slate-200' : 'text-slate-700'
+              }`}
+            >
+              <Shield size={16} />
+              Custom Alias
             </label>
-            <div className={`flex items-center rounded-lg border overflow-hidden ${isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-300 bg-white'}`}>
-              <span className={`px-4 py-3 text-sm font-mono border-r ${isDark ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
-                goto.com/
+
+            <div
+              className={`flex rounded-lg border overflow-hidden ${
+                isDark
+                  ? 'bg-slate-800 border-slate-700'
+                  : 'bg-white border-slate-300'
+              }`}
+            >
+              <span
+                className={`px-4 py-3 border-r text-sm font-mono ${
+                  isDark
+                    ? 'bg-slate-800 border-slate-700 text-slate-400'
+                    : 'bg-slate-50 border-slate-200 text-slate-500'
+                }`}
+              >
+                goto/
               </span>
+
               <input
-                id="customAlias"
-                name="customAlias"
                 type="text"
                 value={customAlias}
-                onChange={(e) => setCustomAlias(e.target.value)}
-                placeholder="my-campaign"
-                className={`w-full px-4 py-3 outline-none text-sm bg-transparent ${isDark ? 'text-white' : 'text-slate-900'}`}
+                onChange={(e) =>
+                  setCustomAlias(e.target.value)
+                }
+                placeholder="my-link"
                 pattern="[a-zA-Z0-9-]+"
-                title="Only letters, numbers, and hyphens are allowed"
+                className={`flex-1 px-4 py-3 bg-transparent outline-none ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}
               />
             </div>
-            <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-              Leave blank to automatically generate a random short code.
-            </p>
           </div>
 
+          {/* Expiry */}
+          <div>
+            <label
+              className={`text-sm font-semibold mb-2 ${
+                isDark ? 'text-slate-200' : 'text-slate-700'
+              }`}
+            >
+              Expiry Date (Optional)
+            </label>
+
+            <input
+              type="datetime-local"
+              value={expiresAt}
+              onChange={(e) =>
+                setExpiresAt(e.target.value)
+              }
+              className={`w-full px-4 py-3 rounded-lg border outline-none ${
+                isDark
+                  ? 'bg-slate-800 border-slate-700 text-white'
+                  : 'bg-white border-slate-300 text-slate-900'
+              }`}
+            />
+          </div>
+
+          {/* ACTIONS */}
           <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
             <button
               type="button"
               onClick={() => navigate('/dashboard')}
-              className={`px-5 py-2.5 rounded-lg font-medium transition-colors ${isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-slate-100'}`}
+              className={`px-5 py-2.5 rounded-lg font-medium ${
+                isDark
+                  ? 'text-slate-300 hover:bg-slate-800'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`}
             >
               Cancel
             </button>
+
             <button
               type="submit"
-              disabled={!isValidUrl || createMutation.isPending}
-              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white font-medium rounded-lg flex items-center gap-2 transition-colors"
+              disabled={
+                !isValidUrl || createMutation.isPending
+              }
+              className="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium transition-colors"
             >
-              {createMutation.isPending ? 'Shortening...' : 'Shorten URL'}
+              {createMutation.isPending
+                ? 'Creating...'
+                : 'Shorten URL'}
             </button>
           </div>
         </div>
