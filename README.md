@@ -17,6 +17,19 @@ https://go-to-bice.vercel.app
 
 
 ---
+## 🏗️ Architecture
+![Architecture](https://raw.githubusercontent.com/praveenkumar0031/go-to/main/docs/architecture.svg)
+
+--- 
+
+The Goto platform utilizes a robust MERN stack architecture designed for enterprise-grade scalability.
+
+----
+
+## ⚒️⚙️ WorkFlow
+![Workflow](https://raw.githubusercontent.com/praveenkumar0031/go-to/main/docs/workflow.svg)
+
+--- 
 
 ## 📁 Project Structure
 
@@ -228,12 +241,6 @@ Backend  → http://localhost:8000
 
 ---
 
-## 🏗️ Architecture
-![Architecture](https://raw.githubusercontent.com/praveenkumar0031/go-to/main/docs/architecture.svg)
-
-The Goto platform utilizes a robust MERN stack architecture designed for enterprise-grade scalability.
-## 🏗️ WorkFlow
-![Workflow](https://raw.githubusercontent.com/praveenkumar0031/go-to/main/docs/workflow.svg)
 
 ### API Endpoint Map
 
