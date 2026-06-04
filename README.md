@@ -229,24 +229,11 @@ Backend  → http://localhost:8000
 ---
 
 ## 🏗️ Architecture
+![Architecture](https://raw.githubusercontent.com/praveenkumar0031/go-to/main/docs/architecture.svg)
 
 The Goto platform utilizes a robust MERN stack architecture designed for enterprise-grade scalability.
-
-```
-[ React 19 SPA ] ↔ [ Axios Interceptors ] ↔ [ React Query ]
-       ↕
-[ Express v5 REST API ]
-  ├── Auth Stack       (JWT + Google OAuth 2.0 + Password Reset)
-  ├── Link Management  (CRUD + Bulk Upload + Custom Aliases)
-  ├── Analytics Engine (Real-time geoip + ua-parser)
-  └── Data Exporters   (JSON Deep Export + CSV Analytics)
-       ↕
-[ MongoDB Database ]
-  ├── Users     → OAuth identities & hashed credentials
-  ├── URLs      → Secure mapping, aliases & expiration logic
-  ├── Analytics → Aggregated click counts & last-visited states
-  └── Logs      → Atomic visit events & configuration history
-```
+## 🏗️ WorkFlow
+![Workflow](https://raw.githubusercontent.com/praveenkumar0031/go-to/main/docs/workflow.svg)
 
 ### API Endpoint Map
 
