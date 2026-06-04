@@ -6,14 +6,14 @@
 
 ## 📽️ Demo Video
 
-> **[▶ https://www.loom.com/share/e0513f3598ba4b10a2392dae10c4fe7f](#)**
+https://www.loom.com/share/e0513f3598ba4b10a2392dae10c4fe7f
 > 
 
 ---
 
 ## 🚀 Live Demo
 
-> **[https://go-to-bice.vercel.app](#)**
+https://go-to-bice.vercel.app
 
 
 ---
