@@ -7,7 +7,9 @@ import {
   Copy,
   CheckCircle,
   XCircle,
+  CalendarDays,
 } from 'lucide-react';
+
 import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
 
@@ -44,6 +46,7 @@ const CreateUrl = () => {
     }
   }, [url]);
 
+  // Generate Full URL
   const getShortUrl = (code) => {
     const base =
       import.meta.env.VITE_REDIRECT_API ||
@@ -52,6 +55,7 @@ const CreateUrl = () => {
     return `${base}/${code}`;
   };
 
+  // Mutation
   const createMutation = useMutation({
     mutationFn: createShortUrl,
 
@@ -91,6 +95,7 @@ const CreateUrl = () => {
     },
   });
 
+  // Submit
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -102,12 +107,14 @@ const CreateUrl = () => {
     const payload = {
       originalUrl: url,
     };
+
     if (customAlias) payload.customAlias = customAlias;
     if (expiresAt) payload.expiresAt = expiresAt;
 
     createMutation.mutate(payload);
   };
 
+  // Copy
   const handleCopy = async () => {
     if (!createdUrl?.shortCode) return;
 
@@ -131,7 +138,7 @@ const CreateUrl = () => {
     return (
       <div className="max-w-3xl mx-auto mt-8">
         <div
-          className={`rounded-2xl border p-8 text-center shadow-sm ${
+          className={`rounded-3xl border p-8 text-center shadow-xl ${
             isDark
               ? 'bg-slate-900 border-slate-800'
               : 'bg-white border-slate-200'
@@ -142,7 +149,7 @@ const CreateUrl = () => {
           </div>
 
           <h2
-            className={`text-3xl font-bold mb-2 ${
+            className={`text-3xl font-black mb-2 ${
               isDark ? 'text-white' : 'text-slate-900'
             }`}
           >
@@ -154,11 +161,11 @@ const CreateUrl = () => {
               isDark ? 'text-slate-400' : 'text-slate-500'
             }`}
           >
-            Your shortened link is ready to use.
+            Your shortened link is ready to share.
           </p>
 
           <div
-            className={`rounded-xl border p-6 flex flex-col md:flex-row gap-6 items-center justify-between ${
+            className={`rounded-2xl border p-6 flex flex-col md:flex-row gap-6 items-center justify-between ${
               isDark
                 ? 'bg-slate-800/50 border-slate-700'
                 : 'bg-slate-50 border-slate-200'
@@ -193,7 +200,7 @@ const CreateUrl = () => {
 
             <button
               onClick={handleCopy}
-              className={`px-5 py-3 rounded-lg text-white font-medium flex items-center gap-2 transition-colors ${
+              className={`px-5 py-3 rounded-xl text-white font-medium flex items-center gap-2 transition-all ${
                 copied
                   ? 'bg-green-600 hover:bg-green-700'
                   : 'bg-indigo-600 hover:bg-indigo-700'
@@ -219,7 +226,7 @@ const CreateUrl = () => {
                 QR Code
               </p>
 
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                 <img
                   src={qrCodeData}
                   alt="QR Code"
@@ -240,7 +247,7 @@ const CreateUrl = () => {
           <div className="mt-10 flex items-center justify-center gap-4">
             <button
               onClick={() => navigate('/dashboard')}
-              className={`px-6 py-2.5 rounded-lg border font-medium transition-colors ${
+              className={`px-6 py-2.5 rounded-xl border font-medium transition-colors ${
                 isDark
                   ? 'border-slate-700 text-slate-300 hover:bg-slate-800'
                   : 'border-slate-300 text-slate-700 hover:bg-slate-100'
@@ -257,7 +264,7 @@ const CreateUrl = () => {
                 setExpiresAt('');
                 setQrCodeData('');
               }}
-              className="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+              className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
             >
               Create Another
             </button>
@@ -270,9 +277,9 @@ const CreateUrl = () => {
   // FORM
   return (
     <div className="max-w-2xl mx-auto mt-6">
-      <div className="mb-6">
+      <div className="mb-8">
         <h1
-          className={`text-3xl font-bold ${
+          className={`text-3xl font-black ${
             isDark ? 'text-white' : 'text-slate-900'
           }`}
         >
@@ -284,19 +291,19 @@ const CreateUrl = () => {
             isDark ? 'text-slate-400' : 'text-slate-500'
           }`}
         >
-          Transform long links into clean and trackable URLs.
+          Transform long links into beautiful and trackable short URLs.
         </p>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className={`rounded-2xl border p-6 shadow-sm ${
+        className={`rounded-3xl border p-6 shadow-xl ${
           isDark
             ? 'bg-slate-900 border-slate-800'
             : 'bg-white border-slate-200'
         }`}
       >
-        <div className="space-y-6">
+        <div className="space-y-7">
           {/* URL */}
           <div>
             <label
@@ -315,10 +322,10 @@ const CreateUrl = () => {
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://example.com"
                 required
-                className={`w-full px-4 py-3 rounded-lg border pr-10 outline-none transition-colors ${
+                className={`w-full px-4 py-3 rounded-xl border pr-10 outline-none transition-all duration-200 ${
                   isDark
-                    ? 'bg-slate-800 border-slate-700 text-white focus:border-indigo-500'
-                    : 'bg-white border-slate-300 text-slate-900 focus:border-indigo-500'
+                    ? 'bg-slate-800 border-slate-700 text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+                    : 'bg-white border-slate-300 text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
                 } ${
                   isValidUrl === false
                     ? 'border-red-500 focus:border-red-500'
@@ -345,8 +352,7 @@ const CreateUrl = () => {
 
             {isValidUrl === false && (
               <p className="text-red-500 text-xs mt-2">
-                Please enter a valid URL including
-                https://
+                Please enter a valid URL including https://
               </p>
             )}
           </div>
@@ -363,7 +369,7 @@ const CreateUrl = () => {
             </label>
 
             <div
-              className={`flex rounded-lg border overflow-hidden ${
+              className={`flex rounded-xl border overflow-hidden ${
                 isDark
                   ? 'bg-slate-800 border-slate-700'
                   : 'bg-white border-slate-300'
@@ -386,7 +392,8 @@ const CreateUrl = () => {
                   setCustomAlias(e.target.value)
                 }
                 placeholder="my-link"
-                pattern="[a-zA-Z0-9-]+"
+                pattern="[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*"
+                title="Only letters, numbers, and hyphens allowed"
                 className={`flex-1 px-4 py-3 bg-transparent outline-none ${
                   isDark ? 'text-white' : 'text-slate-900'
                 }`}
@@ -397,33 +404,43 @@ const CreateUrl = () => {
           {/* Expiry */}
           <div>
             <label
-              className={`text-sm font-semibold mb-2 ${
+              className={`text-sm font-semibold mb-2 flex items-center gap-2 ${
                 isDark ? 'text-slate-200' : 'text-slate-700'
               }`}
             >
+              <CalendarDays size={16} />
               Expiry Date (Optional)
             </label>
 
-            <input
-              type="datetime-local"
-              value={expiresAt}
-              onChange={(e) =>
-                setExpiresAt(e.target.value)
-              }
-              className={`w-full px-4 py-3 rounded-lg border outline-none ${
-                isDark
-                  ? 'bg-slate-800 border-slate-700 text-white'
-                  : 'bg-white border-slate-300 text-slate-900'
+            <div>
+  <input
+    type="datetime-local"
+    value={expiresAt}
+    min={new Date().toISOString().slice(0, 16)}
+    onChange={(e) => setExpiresAt(e.target.value)}
+    className={`w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200 ${
+      isDark
+        ? 'bg-slate-800 border-slate-700 text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+        : 'bg-white border-slate-300 text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+    }`}
+  />
+</div>
+
+            <p
+              className={`text-xs mt-2 ${
+                isDark ? 'text-slate-500' : 'text-slate-500'
               }`}
-            />
+            >
+              The short URL will expire automatically.
+            </p>
           </div>
 
           {/* ACTIONS */}
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+          <div className="pt-5  border-slate-200 dark:border-slate-800 flex justify-end gap-3">
             <button
               type="button"
               onClick={() => navigate('/dashboard')}
-              className={`px-5 py-2.5 rounded-lg font-medium ${
+              className={`px-5 py-2.5 rounded-xl font-medium transition-colors ${
                 isDark
                   ? 'text-slate-300 hover:bg-slate-800'
                   : 'text-slate-700 hover:bg-slate-100'
@@ -437,7 +454,7 @@ const CreateUrl = () => {
               disabled={
                 !isValidUrl || createMutation.isPending
               }
-              className="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium transition-colors"
+              className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition-all"
             >
               {createMutation.isPending
                 ? 'Creating...'
