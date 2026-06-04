@@ -58,13 +58,6 @@ goto/
 │           ├── urlRouter.js
 │           └── userRouter.js
 │       
-├── docs/
-│   ├── API_CONTRACT.md
-│   ├── API_MAPPING_VERIFICATION.md
-│   ├── breif.md
-│   ├── QUICK_REFERENCE.md
-│   ├── redirect_and_shorten_workflow.svg
-│   └── url_shortener_architecture.svg
 ├── frontend/
 │   ├── context/
 │   │   └── AuthContext.jsx
@@ -125,7 +118,14 @@ goto/
 │   └── vite.config.ts
 └── README.md
 ```
-
+---
+#Application Screenshots
+---
+![App Screenshot](docs/goto1.png)
+---
+![App Screenshot](docs/goto2.png)
+---
+![App Screenshot](docs/goto4.png)
 ---
 
 ## ⚙️ Setup Instructions
