@@ -165,13 +165,13 @@ const CreateUrl = () => {
           </p>
 
           <div
-            className={`rounded-2xl border p-6 flex flex-col md:flex-row gap-6 items-center justify-between ${
+            className={`w-full max-w-full overflow-hidden rounded-2xl border p-6 flex flex-col md:flex-row gap-6 items-center justify-between ${
               isDark
                 ? 'bg-slate-800/50 border-slate-700'
                 : 'bg-slate-50 border-slate-200'
             }`}
           >
-            <div className="flex-1 text-left break-all">
+            <div className="flex-1 min-w-0 text-left">
               <p
                 className={`text-sm mb-2 ${
                   isDark ? 'text-slate-400' : 'text-slate-500'
@@ -184,15 +184,17 @@ const CreateUrl = () => {
                 href={getShortUrl(createdUrl.shortCode)}
                 target="_blank"
                 rel="noreferrer"
-                className="text-indigo-600 dark:text-indigo-400 text-xl font-bold hover:underline"
+                className="block w-full truncate text-indigo-600 dark:text-indigo-400 text-xl font-bold hover:underline"
+                title={getShortUrl(createdUrl.shortCode)}
               >
                 {getShortUrl(createdUrl.shortCode)}
               </a>
 
               <p
-                className={`text-xs mt-3 truncate ${
+                className={`text-xs mt-3 block w-full truncate ${
                   isDark ? 'text-slate-500' : 'text-slate-400'
                 }`}
+                title={createdUrl.originalUrl}
               >
                 Redirects to: {createdUrl.originalUrl}
               </p>
