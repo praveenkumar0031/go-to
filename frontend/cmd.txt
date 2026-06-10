@@ -1,0 +1,12 @@
+docker build \
+  --build-arg VITE_BACKEND_API="http://your-backend-url" \
+  --build-arg VITE_REDIRECT_API="http://your-redirect-url" \
+  --build-arg VITE_GOOGLE_CLIENT_ID="your-client-id" \
+  --build-arg VITE_FRONTEND_URL="http://your-frontend-url" \
+  -t goto-frontend:latest .
+
+  docker compose up -d	  Runs the containers in detached mode (in the background).
+  docker compose logs -f	Follows the logs from all your services (great for debugging).
+  docker compose ps	      Lists the status of your services (running/exited).
+  docker compose stop	    Stops the containers without removing them.
+  docker compose down	    Stops and removes the containers and the default network created.

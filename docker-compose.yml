@@ -1,0 +1,30 @@
+services:
+  # --- Backend Service ---
+  backend:
+    build:
+      context: ./backend # Path to your backend directory
+    container_name: goto-backend
+    env_file:
+      - ./backend/.env # Ensure your .env is in the same directory
+    ports:
+      - "8000:8000"
+    restart: always
+
+  # --- Frontend Service ---
+  frontend:
+    build:
+      context: ./frontend # Path to your frontend directory
+      args:
+        VITE_BACKEND_API: ${VITE_BACKEND_API}
+        VITE_REDIRECT_API: ${VITE_REDIRECT_API}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_FRONTEND_URL: ${VITE_FRONTEND_URL}
+    env_file:
+      - ./frontend/.env
+    container_name: goto-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    restart: always
+    

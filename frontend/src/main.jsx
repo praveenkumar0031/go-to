@@ -9,11 +9,13 @@ import App from './App.jsx'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Toaster } from 'react-hot-toast'
 
-const oauth = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const oauth = import.meta.env.VITE_GOOGLE_CLIENT_ID ;
+
 const queryClient = new QueryClient();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
+    
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ThemeProvider>
